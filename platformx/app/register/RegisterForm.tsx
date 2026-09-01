@@ -12,6 +12,7 @@ import {
   saveUser,
   setSession,
   getAllMentors,
+  getAllTracks,
 } from "@/lib/store";
 import type { MentorData } from "@/lib/data";
 
@@ -63,13 +64,6 @@ export default function RegisterForm() {
   useEffect(() => {
     const list = getAllMentors();
     setMentorList(list);
-    if (list.length > 0) {
-      setForm((f) => ({
-        ...f,
-        mentorId: f.mentorId || list[0].id,
-        trackSlug: f.trackSlug || (list[0].tracks && list[0].tracks[0]) || "platform-engineer",
-      }));
-    }
   }, []);
 
   function handleAddCustomTrack() {
@@ -108,8 +102,8 @@ export default function RegisterForm() {
     // Intern
     university: "",
     level: levels[0],
-    mentorId: staticMentors[0].id,
-    trackSlug: staticMentors[0].tracks[0],
+    mentorId: "",
+    trackSlug: "",
     github: "",
     // Mentor
     title: "",
@@ -126,10 +120,12 @@ export default function RegisterForm() {
   function update<K extends keyof typeof form>(key: K, value: string | string[]) {
     if (key === "mentorId") {
       const m = mentorList.find((m) => m.id === value);
+      const fallbackTrack = m?.title ? m.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") : "software-engineer";
+      const resolvedTrack = m && m.tracks.length > 0 ? m.tracks[0] : fallbackTrack;
       setForm((f) => ({
         ...f,
         mentorId: value as string,
-        trackSlug: m && m.tracks.length > 0 ? m.tracks[0] : f.trackSlug,
+        trackSlug: resolvedTrack,
       }));
     } else {
       setForm((f) => ({ ...f, [key]: value }));
@@ -647,10 +643,12 @@ export default function RegisterForm() {
             <div>
               <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Select Mentor *</label>
               <select
+                required
                 className={inputClass}
                 value={form.mentorId}
                 onChange={(e) => update("mentorId", e.target.value)}
               >
+                <option value="">-- Choose Your Mentor --</option>
                 {mentorList.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name} — {m.title}
@@ -662,8 +660,17 @@ export default function RegisterForm() {
               <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Assigned Track</label>
               <input
                 disabled
-                className={`${inputClass} opacity-60 cursor-not-allowed`}
-                value={selectedMentor ? tracks.find(t => t.slug === form.trackSlug)?.name ?? form.trackSlug : ""}
+                className={`${inputClass} opacity-80 bg-surface2 font-medium`}
+                value={
+                  form.mentorId
+                    ? (() => {
+                        const m = mentorList.find((m) => m.id === form.mentorId);
+                        const allT = getAllTracks();
+                        const tObj = allT.find((t) => t.slug === form.trackSlug);
+                        return tObj?.name || m?.title || form.trackSlug || "Track Assigned by Mentor";
+                      })()
+                    : "Select a mentor to assign track"
+                }
               />
             </div>
             <div>

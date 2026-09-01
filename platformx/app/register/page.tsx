@@ -1,4 +1,5 @@
 import RegisterForm from "./RegisterForm";
+import RegisterMentorsList from "./RegisterMentorsList";
 
 export const metadata = { title: "Register & Book — Mentorship Platform" };
 
@@ -27,37 +28,17 @@ export default function RegisterPage() {
                 <p className="text-xs text-muted">Booked Consultations</p>
               </div>
               <div className="rounded-md bg-surface2 p-4 border border-border/50 text-center">
-                <p className="text-3xl font-mono text-accent2 mb-1">4</p>
-                <p className="text-xs text-muted">Active Mentors</p>
+                <p className="text-3xl font-mono text-accent2 mb-1">24/7</p>
+                <p className="text-xs text-muted">Support Availability</p>
               </div>
               <div className="rounded-md bg-surface2 p-4 border border-border/50 text-center">
-                <p className="text-3xl font-mono text-ink mb-1">24/7</p>
-                <p className="text-xs text-muted">Support Availability</p>
+                <p className="text-3xl font-mono text-yellow-400 mb-1">★ 4.9</p>
+                <p className="text-xs text-muted">Avg Mentor Rating</p>
               </div>
             </div>
           </div>
           
-          <div className="rounded-lg border border-border bg-surface2 p-6">
-            <h3 className="text-sm font-semibold text-ink mb-2">Our Mentors</h3>
-            <ul className="space-y-3 mt-4 text-sm text-muted">
-              <li className="flex items-center gap-3">
-                <span className="w-2 h-2 rounded-full bg-accent"></span>
-                <strong className="text-ink">Ali Wazeer</strong> — Platform Engineering
-              </li>
-              <li className="flex items-center gap-3">
-                <span className="w-2 h-2 rounded-full bg-success"></span>
-                <strong className="text-ink">Adnan</strong> — Backend Engineering
-              </li>
-              <li className="flex items-center gap-3">
-                <span className="w-2 h-2 rounded-full bg-accent2"></span>
-                <strong className="text-ink">Yamen</strong> — Cyber Security
-              </li>
-              <li className="flex items-center gap-3">
-                <span className="w-2 h-2 rounded-full bg-ink"></span>
-                <strong className="text-ink">Sajid</strong> — System Admin
-              </li>
-            </ul>
-          </div>
+          <RegisterMentorsList />
         </div>
       </div>
     </section>

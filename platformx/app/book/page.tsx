@@ -11,7 +11,7 @@ import toast, { Toaster } from "react-hot-toast";
 
 const STEPS = ["Track", "Mentor", "Session & Time", "Confirm"];
 
-function getAvailableDates(count = 14) {
+function getAvailableDates(count = 31) {
   const dates: string[] = [];
   const today = new Date();
   for (let i = 1; i <= count; i++) {
@@ -23,8 +23,21 @@ function getAvailableDates(count = 14) {
 }
 
 const timeSlots = [
-  "09:00", "10:00", "11:00", "14:00",
-  "15:00", "16:00", "18:00", "19:00", "20:00", "21:00",
+  "09:00 AM",
+  "10:00 AM",
+  "11:00 AM",
+  "12:00 PM",
+  "01:00 PM",
+  "02:00 PM",
+  "03:00 PM",
+  "04:00 PM",
+  "05:00 PM",
+  "06:00 PM",
+  "07:00 PM",
+  "08:00 PM",
+  "09:00 PM",
+  "10:00 PM",
+  "11:00 PM",
 ];
 
 function BookContent() {
@@ -432,8 +445,8 @@ function BookContent() {
               </div>
 
               <div>
-                <label className="block text-xs text-muted mb-2 uppercase tracking-wider">Select Date</label>
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                <label className="block text-xs text-muted mb-2 uppercase tracking-wider">Select Date (31 Days Calendar)</label>
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin">
                   {dates.map((d) => {
                     const dt = new Date(d + "T00:00:00");
                     return (
@@ -442,14 +455,14 @@ function BookContent() {
                         onClick={() => setSelectedDate(d)}
                         className={`p-2 rounded-lg border text-center transition-colors ${
                           selectedDate === d
-                            ? "border-accent bg-accent/10 text-accent"
-                            : "border-border hover:border-accent/50"
+                            ? "border-accent bg-accent/10 text-accent font-semibold"
+                            : "border-border hover:border-accent/50 bg-surface2/50"
                         }`}
                       >
                         <p className="text-[10px] uppercase text-muted">
                           {dt.toLocaleString("en", { weekday: "short" })}
                         </p>
-                        <p className="text-sm font-medium text-ink">{dt.getDate()}</p>
+                        <p className="text-sm font-bold text-ink">{dt.getDate()}</p>
                         <p className="text-[10px] text-muted">
                           {dt.toLocaleString("en", { month: "short" })}
                         </p>

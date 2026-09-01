@@ -140,13 +140,14 @@ export function getAllMentors(): import("./data").MentorData[] {
       .toUpperCase()
       .slice(0, 2);
 
+    const fallbackTrackSlug = m.title ? m.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") : "software-engineer";
     const baseMentor: import("./data").MentorData = {
       id: m.id,
       name: m.name,
       title: m.title || "Mentor",
       bio: m.bio || `Specialist with ${m.yearsExperience || 3}+ years of industry experience.`,
-      tracks: m.tracks && m.tracks.length > 0 ? m.tracks : ["platform-engineer"],
-      skills: m.skills && m.skills.length > 0 ? m.skills : ["Architecture", "Engineering"],
+      tracks: m.tracks && m.tracks.length > 0 ? m.tracks : [fallbackTrackSlug],
+      skills: m.skills && m.skills.length > 0 ? m.skills : ["Engineering", "Architecture"],
       level: (m.level as import("./data").Level) || "Senior",
       yearsExperience: m.yearsExperience || 5,
       consultationPrice: m.consultationPrice || 250,

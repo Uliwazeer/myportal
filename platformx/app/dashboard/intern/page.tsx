@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { getSession, clearSession, getBookingsByUser, getNotifications, markNotificationsRead, getUnreadCount, getUsers, cancelBookingByIntern, getAllMentors } from "@/lib/store";
+import { getSession, clearSession, getBookingsByUser, getNotifications, markNotificationsRead, getUnreadCount, getUsers, cancelBookingByIntern, getAllMentors, getAllTracks } from "@/lib/store";
 import { mentors as staticMentors, tracks } from "@/lib/data";
-import type { UserProfile, Booking, MentorData } from "@/lib/data";
+import type { UserProfile, Booking, MentorData, Track } from "@/lib/data";
 
 const navItems = [
   { label: "Overview", id: "overview" },
@@ -21,6 +21,7 @@ export default function InternDashboard() {
   const [session, setSession] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [mentors, setMentors] = useState<MentorData[]>(staticMentors);
+  const [allTracksList, setAllTracksList] = useState<Track[]>(tracks);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [unread, setUnread] = useState(0);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -31,6 +32,7 @@ export default function InternDashboard() {
     if (s.role !== "intern") { router.replace(`/dashboard/${s.role}`); return; }
     setSession(s);
     setMentors(getAllMentors());
+    setAllTracksList(getAllTracks());
     setBookings(getBookingsByUser(s.id));
     setUnread(getUnreadCount(s.id));
   }, [router]);
@@ -56,7 +58,17 @@ export default function InternDashboard() {
   );
 
   const mentor = session.mentorId ? mentors.find(m => m.id === session.mentorId) : null;
-  const track = session.trackSlug ? tracks.find(t => t.slug === session.trackSlug) : null;
+  const track = session.trackSlug
+    ? allTracksList.find((t) => t.slug === session.trackSlug) || {
+        slug: session.trackSlug,
+        name: session.trackSlug.toUpperCase().replace(/-/g, " "),
+        tagline: "Specialized Engineering Track",
+        level: session.level || "Beginner / Fresh",
+        durationWeeks: 8,
+        modules: [],
+        finalProject: "Capstone Project",
+      }
+    : null;
   const upcomingBookings = bookings.filter(b => b.status === "confirmed" || b.status === "upcoming" || b.status === "pending");
   const completedBookings = bookings.filter(b => b.status === "completed");
   const notifications = session ? getNotifications(session.id) : [];
