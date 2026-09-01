@@ -20,10 +20,10 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-3xl font-semibold leading-tight text-ink md:text-5xl">
-              Learn IT Engineering with Real Labs, Not Just Theory
+              Learn. Build. Get Mentored. Grow Your Career.
             </h1>
             <p className="mt-4 max-w-md text-base leading-relaxed text-muted">
-              Practical tracks in Frontend, Backend, Cyber Security, DevOps and more. Features auto-evaluated tasks and real mentorship until you build a portfolio-ready final project.
+              A practical mentorship platform connecting learners with industry experts, hands-on learning, real projects, and guidance to help you build job-ready skills.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link

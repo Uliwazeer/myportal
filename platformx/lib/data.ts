@@ -844,88 +844,183 @@ export const tracks: Track[] = [
   },
 ];
 
-// ─── Labs ─────────────────────────────────────────────────────────────────────
+export type LabDifficulty = "Beginner" | "Intermediate" | "Advanced";
 
 export type Lab = {
   id: string;
   track: string;
   title: string;
   scenario: string;
+  difficulty: LabDifficulty;
+  estimatedTime?: string;
+  xp?: number;
+  prerequisites?: string;
   checks: string[];
 };
 
 export const labs: Lab[] = [
+  // DevOps & Containers
+  {
+    id: "devops-01",
+    track: "DevOps",
+    title: "Linux Command Line & Process Management",
+    scenario: "Inspect CPU-heavy background processes, configure systemd daemon services, and set up cron job automation.",
+    difficulty: "Beginner",
+    estimatedTime: "45 mins",
+    xp: 50,
+    prerequisites: "None",
+    checks: ["Systemd service created", "Logs verified with journalctl", "Cron job scheduled"],
+  },
+  {
+    id: "devops-02",
+    track: "DevOps",
+    title: "Dockerizing a Microservice",
+    scenario: "Write an optimized multi-stage Dockerfile for a Node/Go microservice and run with environment variables.",
+    difficulty: "Beginner",
+    estimatedTime: "60 mins",
+    xp: 75,
+    prerequisites: "Linux Basics",
+    checks: ["Multi-stage Dockerfile built", "Image size < 100MB", "Container exposes port 8080"],
+  },
+  {
+    id: "devops-03",
+    track: "DevOps",
+    title: "Multi-Service Architecture with Docker Compose",
+    scenario: "Orchestrate a web API, Redis cache, and Postgres DB network with persistent volumes and healthchecks.",
+    difficulty: "Intermediate",
+    estimatedTime: "90 mins",
+    xp: 100,
+    prerequisites: "Docker Basics",
+    checks: ["Compose services connected", "Volume persistence verified", "Healthchecks passing"],
+  },
+  {
+    id: "devops-04",
+    track: "DevOps",
+    title: "Production CI/CD with GitHub Actions",
+    scenario: "Automate test matrix execution, semantic version tagging, and automated container image deployment.",
+    difficulty: "Intermediate",
+    estimatedTime: "90 mins",
+    xp: 120,
+    prerequisites: "Git & Docker",
+    checks: ["CI workflow passes test suites", "Docker build & cache enabled", "Pushed to registry"],
+  },
   {
     id: "k8s-01",
     track: "Kubernetes",
-    title: "Deploying Your First App",
-    scenario:
-      "You have a ready application that needs to be deployed on Kubernetes with 3 highly available replicas.",
-    checks: [
-      "Deployment exists",
-      "Replicas count = 3",
-      "All Pods are Running",
-    ],
+    title: "Zero-Downtime Deployment & Rolling Updates",
+    scenario: "Deploy high-availability application replicas with readiness/liveness probes and rolling updates.",
+    difficulty: "Intermediate",
+    estimatedTime: "90 mins",
+    xp: 120,
+    prerequisites: "Docker",
+    checks: ["Deployment with 3 replicas", "Liveness probe configured", "Zero downtime during update"],
   },
   {
     id: "k8s-02",
     track: "Kubernetes",
-    title: "Exposing App to the World",
-    scenario:
-      "The app is running inside the cluster but users need to access it from the outside via Service and Ingress.",
-    checks: [
-      "Service is created and linked",
-      "Ingress routes traffic",
-      "External request returns success",
-    ],
+    title: "Ingress Routing & SSL Certificate Automation",
+    scenario: "Expose microservices to public domains with Ingress Controller, routing rules, and Let's Encrypt TLS.",
+    difficulty: "Advanced",
+    estimatedTime: "120 mins",
+    xp: 160,
+    prerequisites: "Kubernetes Basics",
+    checks: ["Ingress Controller active", "TLS Secret mounted", "Path routing validated"],
+  },
+
+  // Cloud & Infrastructure
+  {
+    id: "cloud-01",
+    track: "Cloud / AWS",
+    title: "VPC Networking & Security Groups",
+    scenario: "Design an isolated Cloud VPC with public/private subnets, NAT Gateway, and fine-grained security groups.",
+    difficulty: "Beginner",
+    estimatedTime: "60 mins",
+    xp: 75,
+    prerequisites: "Networking Basics",
+    checks: ["VPC & subnets configured", "Route tables defined", "NAT gateway routing traffic"],
   },
   {
-    id: "frontend-01",
-    track: "Frontend",
-    title: "Accessible Navigation",
-    scenario:
-      "Fix accessibility issues in a React navigation component and ensure full keyboard support.",
-    checks: [
-      "ARIA labels added",
-      "Keyboard focus trapped correctly",
-      "Passes automated a11y checks",
-    ],
+    id: "cloud-02",
+    track: "Cloud / AWS",
+    title: "Infrastructure as Code with Terraform",
+    scenario: "Provision scalable AWS/Cloud infrastructure using modular Terraform templates with remote state locking.",
+    difficulty: "Advanced",
+    estimatedTime: "120 mins",
+    xp: 180,
+    prerequisites: "Cloud VPC Basics",
+    checks: ["Terraform plan verified", "Modules instantiated", "State locked in DynamoDB/S3"],
+  },
+
+  // AI & Prompt Engineering
+  {
+    id: "ai-01",
+    track: "Prompt Engineering",
+    title: "Few-Shot Prompting & Structured Output Formatting",
+    scenario: "Construct system prompts with few-shot exemplars and force strict JSON Schema outputs from LLMs.",
+    difficulty: "Beginner",
+    estimatedTime: "45 mins",
+    xp: 60,
+    prerequisites: "None",
+    checks: ["System instructions crafted", "Few-shot examples defined", "Outputs valid JSON Schema"],
   },
   {
-    id: "security-01",
+    id: "ai-02",
+    track: "AI & GenAI",
+    title: "Building a Retrieval-Augmented Generation (RAG) System",
+    scenario: "Index company documents into a Vector DB, generate embeddings, and query with similarity search & LLM context.",
+    difficulty: "Advanced",
+    estimatedTime: "120 mins",
+    xp: 190,
+    prerequisites: "Python & LLM Basics",
+    checks: ["Documents chunked & embedded", "Vector search top-k accurate", "LLM responds with source citations"],
+  },
+
+  // Cyber Security
+  {
+    id: "sec-01",
     track: "Cyber Security",
-    title: "SQL Injection Remediation",
-    scenario:
-      "A legacy Node.js application is vulnerable to SQL injection. Identify the flaw and apply parameterized queries.",
-    checks: [
-      "Identify vulnerability",
-      "Implement parameterized queries",
-      "Pass security regression tests",
-    ],
+    title: "Web Security: SQL Injection & XSS Remediation",
+    scenario: "Audit a vulnerable web application, identify injection vectors, and enforce parameterized queries & CSP headers.",
+    difficulty: "Intermediate",
+    estimatedTime: "75 mins",
+    xp: 110,
+    prerequisites: "Web Basics",
+    checks: ["Vulnerability reproduced", "Sanitization & ORM implemented", "Regression scan clean"],
   },
   {
-    id: "devops-01",
-    track: "DevOps",
-    title: "Build a CI/CD Pipeline",
-    scenario:
-      "Set up a full GitHub Actions pipeline that builds a Docker image, runs tests, and pushes to a registry.",
-    checks: [
-      "GitHub Actions workflow created",
-      "Docker build succeeds",
-      "Image pushed to registry",
-    ],
+    id: "sec-02",
+    track: "Cyber Security",
+    title: "Network Threat Analysis & Firewall Rules",
+    scenario: "Analyze packet capture logs in Wireshark, detect suspicious port scans, and configure iptables mitigation.",
+    difficulty: "Advanced",
+    estimatedTime: "100 mins",
+    xp: 150,
+    prerequisites: "Networking & Linux",
+    checks: ["Malicious IP detected", "Firewall drop rule applied", "Traffic normalized"],
+  },
+
+  // Frontend & Backend Engineering
+  {
+    id: "front-01",
+    track: "Frontend",
+    title: "Accessible Navigation & State Synchronization",
+    scenario: "Build a WCAG-compliant responsive navigation bar with full keyboard traps and URL query param state syncing.",
+    difficulty: "Beginner",
+    estimatedTime: "50 mins",
+    xp: 70,
+    prerequisites: "HTML/CSS/JS",
+    checks: ["ARIA compliance 100%", "Keyboard focus trapped", "State synced with URL"],
   },
   {
-    id: "platform-01",
-    track: "Platform Engineering",
-    title: "GitOps with ArgoCD",
-    scenario:
-      "Configure ArgoCD to watch a Git repository and automatically sync changes to a Kubernetes cluster.",
-    checks: [
-      "ArgoCD application created",
-      "Auto-sync enabled",
-      "Changes in Git reflect in cluster within 3 minutes",
-    ],
+    id: "back-01",
+    track: "Backend",
+    title: "High-Throughput Rate Limiter & Redis Caching",
+    scenario: "Implement token bucket rate limiting on API endpoints with distributed Redis storage and exponential backoff.",
+    difficulty: "Intermediate",
+    estimatedTime: "80 mins",
+    xp: 130,
+    prerequisites: "REST APIs & Redis",
+    checks: ["Token bucket algorithm applied", "Redis latency < 2ms", "HTTP 429 returned on limit"],
   },
 ];
 
