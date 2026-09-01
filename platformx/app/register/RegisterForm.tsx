@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
-import { tracks, mentors, levels } from "@/lib/data";
+import { tracks, mentors as staticMentors, levels } from "@/lib/data";
 import {
   getUserByEmail,
   getUserByPhone,
   saveUser,
   setSession,
+  getAllMentors,
 } from "@/lib/store";
+import type { MentorData } from "@/lib/data";
 
 type Role = "intern" | "mentor" | "consultation";
 type Step = "role" | "form" | "otp" | "success";
@@ -53,6 +55,20 @@ export default function RegisterForm() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  const [mentorList, setMentorList] = useState<MentorData[]>(staticMentors);
+
+  useEffect(() => {
+    const list = getAllMentors();
+    setMentorList(list);
+    if (list.length > 0) {
+      setForm((f) => ({
+        ...f,
+        mentorId: f.mentorId || list[0].id,
+        trackSlug: f.trackSlug || (list[0].tracks && list[0].tracks[0]) || "platform-engineer",
+      }));
+    }
+  }, []);
+
   // ── Form state ─────────────────────────────────────────────────────────────
   const [form, setForm] = useState({
     // Shared
@@ -62,8 +78,8 @@ export default function RegisterForm() {
     // Intern
     university: "",
     level: levels[0],
-    mentorId: mentors[0].id,
-    trackSlug: mentors[0].tracks[0],
+    mentorId: staticMentors[0].id,
+    trackSlug: staticMentors[0].tracks[0],
     github: "",
     // Mentor
     title: "",
@@ -79,11 +95,11 @@ export default function RegisterForm() {
 
   function update<K extends keyof typeof form>(key: K, value: string | string[]) {
     if (key === "mentorId") {
-      const m = mentors.find((m) => m.id === value);
+      const m = mentorList.find((m) => m.id === value);
       setForm((f) => ({
         ...f,
         mentorId: value as string,
-        trackSlug: m ? m.tracks[0] : f.trackSlug,
+        trackSlug: m && m.tracks.length > 0 ? m.tracks[0] : f.trackSlug,
       }));
     } else {
       setForm((f) => ({ ...f, [key]: value }));
@@ -496,7 +512,7 @@ export default function RegisterForm() {
   }
 
   // ─── Step: Form ────────────────────────────────────────────────────────────
-  const selectedMentor = mentors.find((m) => m.id === form.mentorId);
+  const selectedMentor = mentorList.find((m) => m.id === form.mentorId);
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-5">
@@ -566,7 +582,7 @@ export default function RegisterForm() {
                 value={form.mentorId}
                 onChange={(e) => update("mentorId", e.target.value)}
               >
-                {mentors.map((m) => (
+                {mentorList.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name} — {m.title}
                   </option>

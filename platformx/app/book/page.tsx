@@ -48,11 +48,21 @@ function BookContent() {
     const s = getSession();
     if (!s) { router.push("/login"); return; }
     setSession(s);
-    setAllMentors(getAllMentors());
-    if (s.trackSlug) setSelectedTrack(s.trackSlug);
-    if (s.mentorId) setSelectedMentor(s.mentorId);
-    const mentorParam = searchParams.get("mentor");
-    if (mentorParam) setSelectedMentor(mentorParam);
+    const mList = getAllMentors();
+    setAllMentors(mList);
+
+    const mentorParam = searchParams.get("mentor") || s.mentorId;
+    if (mentorParam) {
+      setSelectedMentor(mentorParam);
+      const targetMentor = mList.find((m) => m.id === mentorParam);
+      if (targetMentor && targetMentor.tracks.length > 0) {
+        setSelectedTrack(targetMentor.tracks[0]);
+      } else if (s.trackSlug) {
+        setSelectedTrack(s.trackSlug);
+      }
+    } else if (s.trackSlug) {
+      setSelectedTrack(s.trackSlug);
+    }
   }, [router, searchParams]);
 
   const filteredMentors = selectedTrack
@@ -291,37 +301,55 @@ function BookContent() {
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {filteredMentors.map((m) => (
-                    <button
-                      key={m.id}
-                      onClick={() => setSelectedMentor(m.id)}
-                      className={`w-full text-left p-4 rounded-xl border transition-all ${
-                        selectedMentor === m.id
-                          ? "border-accent bg-accent/10"
-                          : "border-border hover:border-accent/50"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className={`h-10 w-10 rounded-full ${m.color} flex items-center justify-center text-white font-bold shrink-0`}
-                        >
-                          {m.initials}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <p className="font-medium text-ink">{m.name}</p>
-                            <div className="flex items-center gap-1 text-xs text-muted">
-                              <span className="text-yellow-400">★</span> {m.rating}
-                            </div>
+                  {filteredMentors.map((m) => {
+                    const mTracks = tracks.filter((t) => m.tracks.includes(t.slug));
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => {
+                          setSelectedMentor(m.id);
+                          if (m.tracks.length > 0 && !m.tracks.includes(selectedTrack)) {
+                            setSelectedTrack(m.tracks[0]);
+                          }
+                        }}
+                        className={`w-full text-left p-4 rounded-xl border transition-all ${
+                          selectedMentor === m.id
+                            ? "border-accent bg-accent/10"
+                            : "border-border hover:border-accent/50"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`h-10 w-10 rounded-full ${m.color} flex items-center justify-center text-white font-bold shrink-0`}
+                          >
+                            {m.initials}
                           </div>
-                          <p className="text-xs text-muted">{m.title}</p>
-                          <p className="text-xs text-accent mt-1">
-                            From {m.consultationPrice} EGP / session
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium text-ink">{m.name}</p>
+                              <div className="flex items-center gap-1 text-xs text-muted">
+                                <span className="text-yellow-400">★</span> {m.rating}
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted">{m.title}</p>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                              {mTracks.map((t) => (
+                                <span
+                                  key={t.slug}
+                                  className="text-[10px] font-mono bg-accent/10 text-accent border border-accent/30 rounded px-1.5 py-0.5"
+                                >
+                                  {t.name}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="text-xs text-accent font-semibold mt-2">
+                              From {m.consultationPrice} EGP / session
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
 
