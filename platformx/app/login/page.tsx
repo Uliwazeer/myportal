@@ -37,6 +37,8 @@ export default function LoginPage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  const [otpToken, setOtpToken] = useState("");
+
   const isDev = process.env.NODE_ENV === 'development';
 
   /* countdown ticker */
@@ -80,7 +82,8 @@ export default function LoginPage() {
         return;
       }
 
-      if (isDev && json.code) setDebugCode(json.code);
+      if (json.token) setOtpToken(json.token);
+      if (json.debugCode) setDebugCode(json.debugCode);
       setStep('otp');
       setCountdown(60);
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
@@ -104,7 +107,7 @@ export default function LoginPage() {
       const res = await fetch('/api/otp/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), code }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), code, token: otpToken }),
       });
       const json = await res.json();
 
@@ -144,7 +147,8 @@ export default function LoginPage() {
         body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
       const json = await res.json();
-      if (isDev && json.code) setDebugCode(json.code);
+      if (json.token) setOtpToken(json.token);
+      if (json.debugCode) setDebugCode(json.debugCode);
       setCountdown(60);
       toast.success('A new code has been sent.');
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
@@ -305,13 +309,13 @@ export default function LoginPage() {
                   <p className="text-accent font-semibold text-sm mb-8 break-all">{maskEmail(email)}</p>
 
                   {/* dev debug */}
-                  {isDev && debugCode && (
+                  {debugCode && (
                     <div className="mb-6 px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center gap-3">
                       <svg className="w-4 h-4 text-yellow-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
                       </svg>
                       <span className="text-yellow-300 text-xs font-mono">
-                        DEV — OTP code: <span className="font-bold tracking-widest">{debugCode}</span>
+                        Demo Mode — Code: <span className="font-bold tracking-widest">{debugCode}</span>
                       </span>
                     </div>
                   )}

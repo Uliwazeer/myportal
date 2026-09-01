@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const email = String(body.email || "").trim();
 
   if (!EMAIL_RE.test(email)) {
-    return NextResponse.json({ ok: false, error: "البريد الإلكتروني مش صحيح" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "Please enter a valid email address." }, { status: 400 });
   }
 
   const { code, token } = createOtp(email);

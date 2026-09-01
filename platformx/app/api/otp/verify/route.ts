@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   const token = String(body.token || "");
 
   if (!email || !code || !token) {
-    return NextResponse.json({ ok: false, error: "البريد والكود مطلوبين" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "Email, code, and token are required." }, { status: 400 });
   }
 
   const result = verifyOtp(token, email, code);

@@ -74,16 +74,16 @@ export function verifyOtp(
   const data = unpackToken<OtpPayload>(token);
 
   if (!data) {
-    return { ok: false, reason: "لازم تطلب كود التحقق الأول" };
+    return { ok: false, reason: "Please request a verification code first." };
   }
   if (Date.now() > data.exp) {
-    return { ok: false, reason: "انتهت صلاحية الكود، اطلب كود جديد" };
+    return { ok: false, reason: "Code expired. Please request a new code." };
   }
   if (data.e !== normalizeEmail(email)) {
-    return { ok: false, reason: "البريد الإلكتروني مش مطابق لطلب الكود" };
+    return { ok: false, reason: "Email does not match the request." };
   }
   if (data.c !== code.trim()) {
-    return { ok: false, reason: "الكود غلط" };
+    return { ok: false, reason: "Invalid verification code." };
   }
 
   const ticket = packToken({

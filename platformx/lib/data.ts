@@ -765,6 +765,62 @@ export const tracks: Track[] = [
     finalProject:
       "Complete Machine Learning Model API with a Data Visualization Dashboard",
   },
+  {
+    slug: "embedded-systems",
+    name: "Embedded Systems Engineer",
+    tagline:
+      "Master microcontrollers, C/C++, RTOS, IoT protocols, and hardware-software interfacing.",
+    level: "Mid-Level",
+    durationWeeks: 8,
+    modules: [
+      {
+        week: 1,
+        title: "C / C++ for Embedded",
+        topics: ["Pointers & Memory", "Bitwise Operations", "Structures & Unions"],
+      },
+      {
+        week: 2,
+        title: "Microcontroller Architecture",
+        topics: ["ARM Cortex-M", "GPIOs", "Timers & Interrupts"],
+      },
+      {
+        week: 3,
+        title: "Communication Protocols",
+        topics: ["UART", "SPI", "I2C", "CAN Bus"],
+      },
+      {
+        week: 4,
+        title: "Real-Time Operating Systems",
+        topics: ["FreeRTOS Tasks", "Semaphores & Mutexes", "Queues"],
+      },
+      {
+        week: 5,
+        title: "Sensors & Actuators Interfacing",
+        topics: ["ADC/DAC", "PWM Motor Control", "Sensor Drivers"],
+      },
+      {
+        week: 6,
+        title: "IoT & Wireless Protocols",
+        topics: ["ESP32 / Wi-Fi", "Bluetooth Low Energy (BLE)", "MQTT"],
+      },
+      {
+        week: 7,
+        title: "Debugging & Hardware Testing",
+        topics: ["Logic Analyzers", "Oscilloscopes", "JTAG / SWD Debugging"],
+      },
+      {
+        week: 8,
+        title: "Final Project",
+        topics: [
+          "IoT Smart Embedded Node",
+          "FreeRTOS Architecture",
+          "Cloud Telemetry & Control",
+        ],
+      },
+    ],
+    finalProject:
+      "Production-grade IoT Embedded Controller with FreeRTOS, Sensor Hub, and Cloud MQTT Dashboard",
+  },
 ];
 
 // ─── Labs ─────────────────────────────────────────────────────────────────────

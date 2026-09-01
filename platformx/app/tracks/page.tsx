@@ -1,7 +1,7 @@
 import TrackCard from "@/components/TrackCard";
 import { tracks } from "@/lib/data";
 
-export const metadata = { title: "Learning Tracks — PlatformX" };
+export const metadata = { title: "Learning Tracks — Mentorship Platform" };
 
 export default function TracksPage() {
   return (

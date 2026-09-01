@@ -84,6 +84,51 @@ export function getAllMentors(): import("./data").MentorData[] {
   return [...staticMentors, ...dynamicMentors];
 }
 
+export function getAllTracks(): import("./data").Track[] {
+  const { tracks: staticTracks } = require("./data");
+  const mentorsList = getAllMentors();
+  const allTracks = [...staticTracks];
+
+  for (const m of mentorsList) {
+    for (const tSlug of m.tracks || []) {
+      if (!allTracks.some((t) => t.slug === tSlug)) {
+        const formattedName = tSlug
+          .split("-")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
+
+        allTracks.push({
+          slug: tSlug,
+          name: formattedName,
+          tagline: `Professional ${formattedName} track curated by verified mentors.`,
+          level: (m.level as import("./data").Level) || "Junior",
+          durationWeeks: 8,
+          modules: [
+            {
+              week: 1,
+              title: `${formattedName} Fundamentals`,
+              topics: ["Core Concepts", "Best Practices", "Tooling Setup"],
+            },
+            {
+              week: 2,
+              title: "Hands-on Implementation",
+              topics: ["Architecture Design", "Practical Exercises"],
+            },
+            {
+              week: 8,
+              title: "Final Capstone Project",
+              topics: ["Production Deployment", "Mentor Review & Feedback"],
+            },
+          ],
+          finalProject: `End-to-end production ${formattedName} project with mentor guidance`,
+        });
+      }
+    }
+  }
+
+  return allTracks;
+}
+
 export function getMentorById(id: string): import("./data").MentorData | undefined {
   return getAllMentors().find((m) => m.id === id);
 }

@@ -11,14 +11,19 @@ export async function sendOtpEmail(email: string, code: string): Promise<{ sent:
   }
 
   await resend.emails.send({
-    from: process.env.OTP_FROM_EMAIL || "PlatformX <onboarding@resend.dev>",
+    from: process.env.OTP_FROM_EMAIL || "Mentorship Platform <onboarding@resend.dev>",
     to: email,
-    subject: "كود التحقق من PlatformX",
+    subject: "Your Mentorship Platform Verification Code",
     html: `
-      <div style="font-family:Arial,sans-serif;direction:rtl;text-align:right;max-width:420px">
-        <p style="font-size:15px;color:#111">كود التحقق بتاعك لإكمال التسجيل في PlatformX:</p>
-        <p style="font-size:32px;font-weight:700;letter-spacing:6px;color:#111">${code}</p>
-        <p style="font-size:13px;color:#666">الكود صالح لمدة دقيقة واحدة فقط من وقت إرساله.</p>
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0c0c0c; color: #ffffff; padding: 40px 20px; border-radius: 12px; max-width: 480px; margin: 0 auto; border: 1px solid #222;">
+        <div style="margin-bottom: 24px; text-align: center;">
+          <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 700;">Mentorship Platform</h2>
+        </div>
+        <p style="font-size: 15px; color: #a1a1aa; line-height: 1.5; margin-bottom: 20px;">Use the following verification code to complete your authentication:</p>
+        <div style="background: #18181b; border: 1px solid #27272a; border-radius: 8px; padding: 18px; text-align: center; margin-bottom: 20px;">
+          <span style="font-family: monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #e60000;">${code}</span>
+        </div>
+        <p style="font-size: 13px; color: #71717a; margin-bottom: 0;">This code is valid for 1 minute. If you did not request this code, please ignore this email.</p>
       </div>
     `,
   });

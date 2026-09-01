@@ -12,6 +12,7 @@ export default function MentorsPage() {
   const [search, setSearch] = useState("");
   const [filterTrack, setFilterTrack] = useState("all");
   const [filterLevel, setFilterLevel] = useState("all");
+  const [selectedModalMentor, setSelectedModalMentor] = useState<MentorData | null>(null);
 
   useEffect(() => {
     setMentorList(getAllMentors());
@@ -58,17 +59,29 @@ export default function MentorsPage() {
 
         {/* Filters */}
         <div className="flex flex-col md:flex-row gap-3 mb-8">
-          <input
-            type="text"
-            placeholder="Search mentors, skills..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/20 transition-all"
-          />
+          <div className="relative flex-1">
+            <svg
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by name, title, or skill (e.g. Kubernetes, React)..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-surface border border-border text-ink placeholder:text-muted rounded-xl text-sm focus:border-accent focus:outline-none transition-colors"
+            />
+          </div>
           <select
             value={filterTrack}
             onChange={(e) => setFilterTrack(e.target.value)}
-            className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-ink focus:border-accent focus:outline-none"
+            className="px-3.5 py-2.5 bg-surface border border-border text-ink rounded-xl text-sm focus:border-accent focus:outline-none transition-colors"
           >
             <option value="all">All Tracks</option>
             {tracks.map((t) => (
@@ -80,7 +93,7 @@ export default function MentorsPage() {
           <select
             value={filterLevel}
             onChange={(e) => setFilterLevel(e.target.value)}
-            className="rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-ink focus:border-accent focus:outline-none"
+            className="px-3.5 py-2.5 bg-surface border border-border text-ink rounded-xl text-sm focus:border-accent focus:outline-none transition-colors"
           >
             <option value="all">All Levels</option>
             {levels.map((l) => (
@@ -113,6 +126,9 @@ export default function MentorsPage() {
               const mentorTracks = tracks.filter((t) =>
                 m.tracks.includes(t.slug)
               );
+              const actualConsultations = m.completedConsultations || 0;
+              const actualMentees = m.menteesCount || (m.mentoredPeople?.length || 0);
+
               return (
                 <motion.div
                   key={m.id}
@@ -146,15 +162,17 @@ export default function MentorsPage() {
                           </span>
                         </div>
                       </div>
+                      
+                      {/* Stats Badges */}
                       <div className="flex flex-wrap items-center gap-2 mt-2">
                         <span className="text-[10px] font-mono border border-border text-muted rounded px-1.5 py-0.5">
                           {m.level}
                         </span>
-                        <span className="text-[10px] font-mono bg-accent/10 text-accent border border-accent/30 rounded px-1.5 py-0.5 font-semibold">
-                          {m.completedConsultations} Consultations Completed
+                        <span className="text-[10px] font-mono bg-accent/10 text-accent border border-accent/30 rounded px-2 py-0.5 font-semibold flex items-center gap-1">
+                          <span>💬</span> {actualConsultations} Consultations
                         </span>
-                        <span className="text-[10px] text-muted">
-                          {m.yearsExperience}+ yrs exp &middot; {m.responseRate}% response
+                        <span className="text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded px-2 py-0.5 font-semibold flex items-center gap-1">
+                          <span>🎓</span> {actualMentees} Interns Mentored
                         </span>
                       </div>
                     </div>
@@ -165,21 +183,21 @@ export default function MentorsPage() {
                     {m.bio}
                   </p>
 
-                  {/* Featured Review & Comment */}
-                  {m.featuredReview && (
-                    <div className="bg-surface2/80 border border-border/80 rounded-xl p-3 text-xs space-y-1">
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-ink font-semibold flex items-center gap-1">
-                          <span className="text-yellow-400">{"★".repeat(m.featuredReview.rating)}</span>
-                          {m.featuredReview.userName}
-                        </span>
-                        <span className="text-green-400 font-mono text-[10px] flex items-center gap-0.5">
-                          ✓ Verified
-                        </span>
-                      </div>
-                      <p className="text-muted italic">&ldquo;{m.featuredReview.comment}&rdquo;</p>
+                  {/* Interactive Button to View Mentored People & Consultations */}
+                  <div className="p-3 bg-surface2/60 border border-border/80 rounded-xl flex items-center justify-between">
+                    <div className="text-xs text-ink font-medium flex items-center gap-1.5">
+                      <span className="text-accent font-bold">●</span>
+                      <span>Verified Track Record:</span>
+                      <span className="text-muted">{m.mentoredPeople?.length || 0} students recorded</span>
                     </div>
-                  )}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedModalMentor(m)}
+                      className="text-xs font-semibold text-accent hover:underline flex items-center gap-1"
+                    >
+                      View Student List ({m.mentoredPeople?.length || 0}) →
+                    </button>
+                  </div>
 
                   {/* Skills */}
                   <div className="flex flex-wrap gap-1.5">
@@ -237,6 +255,105 @@ export default function MentorsPage() {
                 </motion.div>
               );
             })}
+          </div>
+        )}
+
+        {/* Modal: People Mentored & Consultations List */}
+        {selectedModalMentor && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-xl bg-surface border border-border rounded-2xl p-6 shadow-2xl space-y-5 max-h-[85vh] flex flex-col"
+            >
+              <div className="flex items-start justify-between border-b border-border pb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`h-12 w-12 rounded-full ${selectedModalMentor.color} flex items-center justify-center text-white font-bold text-lg shadow-md`}>
+                    {selectedModalMentor.initials}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-ink">{selectedModalMentor.name}</h3>
+                    <p className="text-xs text-muted">
+                      {selectedModalMentor.completedConsultations} Consultations &middot; {selectedModalMentor.menteesCount || (selectedModalMentor.mentoredPeople?.length || 0)} Interns
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedModalMentor(null)}
+                  className="p-1.5 text-muted hover:text-ink rounded-lg bg-surface2 transition-colors text-sm"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="overflow-y-auto space-y-3 pr-1 flex-1">
+                {(!selectedModalMentor.mentoredPeople || selectedModalMentor.mentoredPeople.length === 0) ? (
+                  <div className="text-center py-10">
+                    <p className="text-muted text-sm">New mentor profile. No public session logs recorded yet.</p>
+                    <Link
+                      href={`/book?mentor=${selectedModalMentor.id}`}
+                      className="mt-3 inline-block text-xs bg-accent text-white rounded-lg px-4 py-2 font-medium"
+                    >
+                      Be the first to book a session →
+                    </Link>
+                  </div>
+                ) : (
+                  selectedModalMentor.mentoredPeople.map((person, idx) => (
+                    <div key={idx} className="p-4 bg-surface2 rounded-xl border border-border/70 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-xs font-bold text-accent">
+                            {person.name.split(" ").map((n) => n[0]).join("")}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-ink leading-tight">{person.name}</p>
+                            <p className="text-xs text-muted">{person.topicOrTrack}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`text-[10px] font-mono rounded px-2 py-0.5 border ${
+                              person.type === "Internship"
+                                ? "bg-blue-950/40 text-blue-400 border-blue-800"
+                                : "bg-green-950/40 text-green-400 border-green-800"
+                            }`}
+                          >
+                            {person.type}
+                          </span>
+                          <span className="text-xs text-yellow-400">★ {person.rating}</span>
+                          <span className="text-[11px] text-muted">{person.date}</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted italic pl-10">&ldquo;{person.feedback}&rdquo;</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="pt-3 border-t border-border flex items-center justify-between">
+                <Link
+                  href={`/mentors/${selectedModalMentor.id}`}
+                  className="text-xs text-muted hover:text-ink transition-colors"
+                >
+                  Go to Full Profile →
+                </Link>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSelectedModalMentor(null)}
+                    className="px-4 py-2 text-xs border border-border text-muted hover:text-ink rounded-xl transition-colors"
+                  >
+                    Close
+                  </button>
+                  <Link
+                    href={`/book?mentor=${selectedModalMentor.id}`}
+                    className="px-4 py-2 text-xs bg-accent text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
+                  >
+                    Book Session
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
           </div>
         )}
       </div>

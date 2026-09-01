@@ -4,9 +4,9 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { tracks, mentors, levels } from "@/lib/data";
-import { getSession, saveBooking, addNotification, getAllMentors } from "@/lib/store";
-import type { Level } from "@/lib/data";
+import { tracks as staticTracks, mentors as staticMentors, levels } from "@/lib/data";
+import { getSession, saveBooking, addNotification, getAllMentors, getAllTracks } from "@/lib/store";
+import type { Level, Track, MentorData } from "@/lib/data";
 import toast, { Toaster } from "react-hot-toast";
 
 const STEPS = ["Track", "Mentor", "Date & Time", "Confirm"];
@@ -42,14 +42,17 @@ function BookContent() {
   const [session, setSession] = useState<ReturnType<typeof getSession>>(null);
   const [booked, setBooked] = useState(false);
 
-  const [allMentors, setAllMentors] = useState(mentors);
+  const [allMentors, setAllMentors] = useState<MentorData[]>(staticMentors);
+  const [allTracks, setAllTracks] = useState<Track[]>(staticTracks);
 
   useEffect(() => {
     const s = getSession();
     if (!s) { router.push("/login"); return; }
     setSession(s);
     const mList = getAllMentors();
+    const tList = getAllTracks();
     setAllMentors(mList);
+    setAllTracks(tList);
 
     const mentorParam = searchParams.get("mentor") || s.mentorId;
     if (mentorParam) {
@@ -70,7 +73,7 @@ function BookContent() {
     : allMentors;
 
   const mentor = allMentors.find((m) => m.id === selectedMentor);
-  const track = tracks.find((t) => t.slug === selectedTrack);
+  const track = allTracks.find((t) => t.slug === selectedTrack);
   const dates = getAvailableDates();
 
   const [bookedBookingId, setBookedBookingId] = useState("");
@@ -217,7 +220,7 @@ function BookContent() {
             >
               <h2 className="text-lg font-semibold text-ink">Choose a Track</h2>
               <div className="grid gap-3">
-                {tracks.map((t) => (
+                {allTracks.map((t) => (
                   <button
                     key={t.slug}
                     onClick={() => setSelectedTrack(t.slug)}
@@ -302,7 +305,7 @@ function BookContent() {
               ) : (
                 <div className="space-y-3">
                   {filteredMentors.map((m) => {
-                    const mTracks = tracks.filter((t) => m.tracks.includes(t.slug));
+                    const mTracks = allTracks.filter((t) => m.tracks.includes(t.slug));
                     return (
                       <button
                         key={m.id}
