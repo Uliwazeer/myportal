@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { getSession, clearSession, getBookingsByUser, getUnreadCount, markNotificationsRead, getNotifications } from "@/lib/store";
+import { getSession, clearSession, getBookingsByUser, getUnreadCount, markNotificationsRead, getNotifications, cancelBookingByIntern } from "@/lib/store";
 import { mentors, tracks } from "@/lib/data";
 import type { UserProfile, Booking, Notification } from "@/lib/data";
 
@@ -220,17 +220,44 @@ export default function ConsultationDashboard() {
                       <div key={b.id} className="bg-surface rounded-xl border border-border p-5">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                            <h4 className="font-semibold text-ink">{track?.name || b.trackSlug}</h4>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-mono text-xs text-accent font-semibold bg-accent/10 border border-accent/30 rounded px-1.5 py-0.5">
+                                {b.id}
+                              </span>
+                              <h4 className="font-semibold text-ink">{track?.name || b.trackSlug}</h4>
+                            </div>
                             <p className="text-sm text-muted">with {mentor?.name}</p>
                             <p className="text-xs text-muted mt-1">{b.date} · {b.time} · {b.duration} min</p>
                             {b.topic && <p className="text-xs text-muted mt-0.5">Topic: {b.topic}</p>}
                           </div>
-                          <span className={`text-[10px] font-mono rounded px-2 py-0.5 ${
-                            b.status === "completed" ? "bg-green-900/30 text-green-400 border border-green-800" :
-                            b.status === "cancelled" ? "bg-red-900/30 text-red-400 border border-red-800" :
-                            "bg-accent/10 text-accent border border-accent/30"
-                          }`}>{b.status.toUpperCase()}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-mono rounded px-2 py-0.5 ${
+                              b.status === "completed" ? "bg-green-900/30 text-green-400 border border-green-800" :
+                              b.status === "confirmed" ? "bg-blue-900/30 text-blue-400 border border-blue-800" :
+                              b.status === "cancelled" ? "bg-red-900/30 text-red-400 border border-red-800" :
+                              "bg-accent/10 text-accent border border-accent/30"
+                            }`}>{b.status.toUpperCase()}</span>
+                          </div>
                         </div>
+
+                        {(b.status === "pending" || b.status === "confirmed") && (
+                          <div className="mt-4 pt-3 border-t border-border flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <span className="text-muted">
+                              💡 <strong className="text-ink">Cancellation policy:</strong> Full refund if cancelled 12+ hours before session.
+                            </span>
+                            <button
+                              onClick={() => {
+                                if (confirm("Are you sure you want to cancel this booking?")) {
+                                  cancelBookingByIntern(b.id);
+                                  if (session) setBookings(getBookingsByUser(session.id));
+                                }
+                              }}
+                              className="px-3 py-1 border border-border hover:border-red-500 hover:text-red-400 text-muted rounded-md transition-colors"
+                            >
+                              Cancel Booking
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

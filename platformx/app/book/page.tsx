@@ -60,13 +60,15 @@ function BookContent() {
   const track = tracks.find((t) => t.slug === selectedTrack);
   const dates = getAvailableDates();
 
+  const [bookedBookingId, setBookedBookingId] = useState("");
+
   async function handleConfirm() {
     if (!session || !selectedTrack || !selectedMentor || !selectedDate || !selectedTime) {
       toast.error("Please fill in all required fields.");
       return;
     }
     setSubmitting(true);
-    saveBooking({
+    const newBooking = saveBooking({
       userId: session.id,
       mentorId: selectedMentor,
       trackSlug: selectedTrack,
@@ -75,10 +77,20 @@ function BookContent() {
       time: selectedTime,
       duration: selectedDuration,
     });
+    setBookedBookingId(newBooking.id);
+
+    // Notification to Intern
     addNotification({
       userId: session.id,
-      message: `Your session with ${mentor?.name} on ${selectedDate} at ${selectedTime} is now pending confirmation.`,
+      message: `[${newBooking.id}] Your session request with ${mentor?.name} on ${selectedDate} at ${selectedTime} is pending mentor confirmation.`,
     });
+
+    // Notification / Email simulation to Mentor
+    addNotification({
+      userId: selectedMentor,
+      message: `📩 [${newBooking.id}] New consultation request from ${session.name} for ${selectedDate} at ${selectedTime} (${selectedDuration} min). Please confirm or decline.`,
+    });
+
     setBooked(true);
     setSubmitting(false);
     toast.success("Session booked successfully!");
@@ -94,17 +106,26 @@ function BookContent() {
           className="bg-surface rounded-2xl border border-border p-8 max-w-md w-full text-center"
         >
           <div className="text-5xl mb-4">🎉</div>
-          <h2 className="text-2xl font-bold text-ink mb-2">Session Booked!</h2>
-          <p className="text-muted text-sm mb-6">
-            Your session with <span className="text-ink font-medium">{mentor?.name}</span> on{" "}
+          <span className="font-mono text-xs text-accent font-semibold bg-accent/10 border border-accent/30 rounded px-2.5 py-1 inline-block mb-3">
+            Booking ID: {bookedBookingId}
+          </span>
+          <h2 className="text-2xl font-bold text-ink mb-2">Session Requested!</h2>
+          <p className="text-muted text-sm mb-4">
+            Your request has been sent to <span className="text-ink font-medium">{mentor?.name}</span> for{" "}
             <span className="text-ink font-medium">{selectedDate}</span> at{" "}
             <span className="text-ink font-medium">{selectedTime}</span>{" "}
-            ({selectedDuration} min) is pending confirmation.
+            ({selectedDuration} min).
           </p>
+          <div className="bg-surface2 border border-border/70 rounded-xl p-3 mb-6 text-left text-xs space-y-1.5">
+            <p className="text-ink font-semibold">What happens next?</p>
+            <p className="text-muted">1. The mentor receives your request and confirms the session.</p>
+            <p className="text-muted">2. You will receive an instant notification &amp; confirmation email.</p>
+            <p className="text-muted">3. Free cancellation with 100% refund up to 12 hours before the session.</p>
+          </div>
           <div className="flex gap-3 justify-center">
             <Link
               href={session?.role === "intern" ? "/dashboard/intern" : "/dashboard/consultation"}
-              className="bg-accent text-white rounded-xl px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
+              className="bg-accent text-white rounded-xl px-5 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity shadow-lg shadow-accent/20"
             >
               Go to Dashboard
             </Link>

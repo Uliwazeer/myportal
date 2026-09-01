@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { getSession, clearSession, getBookingsByMentor, getReviewsByMentor, getUnreadCount, markNotificationsRead, getNotifications } from "@/lib/store";
+import { getSession, clearSession, getBookingsByMentor, getReviewsByMentor, getUnreadCount, markNotificationsRead, getNotifications, confirmBookingByMentor, declineBookingByMentor } from "@/lib/store";
 import { tracks } from "@/lib/data";
 import type { UserProfile, Booking, Review, Notification } from "@/lib/data";
 
@@ -163,7 +163,7 @@ export default function MentorDashboard() {
 
           {activeTab === "bookings" && (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-              <h2 className="text-2xl font-bold text-ink">Bookings</h2>
+              <h2 className="text-2xl font-bold text-ink">Bookings Management</h2>
               {bookings.length === 0 ? (
                 <div className="text-center py-20 border border-dashed border-border rounded-xl">
                   <p className="text-muted">No bookings yet. Students will book sessions with you once your profile is visible.</p>
@@ -176,16 +176,50 @@ export default function MentorDashboard() {
                       <div key={b.id} className="bg-surface rounded-xl border border-border p-5">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                            <h4 className="font-semibold text-ink">{t?.name || b.trackSlug}</h4>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-mono text-xs text-accent font-semibold bg-accent/10 border border-accent/30 rounded px-1.5 py-0.5">
+                                {b.id}
+                              </span>
+                              <h4 className="font-semibold text-ink">{t?.name || b.trackSlug}</h4>
+                            </div>
                             <p className="text-sm text-muted">{b.date} · {b.time} · {b.duration} min</p>
                             {b.topic && <p className="text-xs text-muted mt-1">Topic: {b.topic}</p>}
                           </div>
-                          <span className={`text-[10px] font-mono rounded px-2 py-0.5 ${
-                            b.status === "completed" ? "bg-green-900/30 text-green-400 border border-green-800" :
-                            b.status === "cancelled" ? "bg-red-900/30 text-red-400 border border-red-800" :
-                            "bg-accent/10 text-accent border border-accent/30"
-                          }`}>{b.status.toUpperCase()}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-mono rounded px-2 py-0.5 ${
+                              b.status === "completed" ? "bg-green-900/30 text-green-400 border border-green-800" :
+                              b.status === "confirmed" ? "bg-blue-900/30 text-blue-400 border border-blue-800" :
+                              b.status === "cancelled" ? "bg-red-900/30 text-red-400 border border-red-800" :
+                              "bg-accent/10 text-accent border border-accent/30"
+                            }`}>{b.status.toUpperCase()}</span>
+                          </div>
                         </div>
+
+                        {b.status === "pending" && (
+                          <div className="mt-4 pt-3 border-t border-border flex items-center justify-between gap-2">
+                            <p className="text-xs text-yellow-400">⚡ Awaiting your confirmation</p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => {
+                                  confirmBookingByMentor(b.id);
+                                  if (session) setBookings(getBookingsByMentor(session.id));
+                                }}
+                                className="px-3 py-1.5 text-xs font-semibold bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors"
+                              >
+                                Confirm Session
+                              </button>
+                              <button
+                                onClick={() => {
+                                  declineBookingByMentor(b.id);
+                                  if (session) setBookings(getBookingsByMentor(session.id));
+                                }}
+                                className="px-3 py-1.5 text-xs border border-border hover:border-red-500 hover:text-red-400 text-muted rounded-lg transition-colors"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

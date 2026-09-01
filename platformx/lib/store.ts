@@ -1,4 +1,4 @@
-﻿// ─── localStorage Store Helpers ───────────────────────────────
+// ─── localStorage Store Helpers ───────────────────────────────
 // All data is stored in localStorage for demo mode.
 // Keys: px_users, px_bookings, px_reviews, px_notifications, px_session
 
@@ -73,6 +73,12 @@ export function clearSession(): void {
   localStorage.removeItem("px_session");
 }
 
+function generateBookingId(): string {
+  const year = new Date().getFullYear();
+  const randomNum = Math.floor(100000 + Math.random() * 900000);
+  return `MP-${year}-${randomNum}`;
+}
+
 // ─── Bookings ─────────────────────────────────────────────────
 export function getBookings(): Booking[] {
   return getItem<Booking>("px_bookings");
@@ -90,7 +96,7 @@ export function saveBooking(booking: Omit<Booking, "id" | "createdAt" | "status"
   const bookings = getBookings();
   const newBooking: Booking = {
     ...booking,
-    id: generateId(),
+    id: generateBookingId(),
     status: "pending",
     createdAt: new Date().toISOString(),
   };
@@ -103,6 +109,96 @@ export function updateBookingStatus(bookingId: string, status: Booking["status"]
     b.id === bookingId ? { ...b, status } : b
   );
   setItem("px_bookings", bookings);
+}
+
+export function canCancelWithRefund(booking: Booking): { eligible: boolean; hoursRemaining: number } {
+  const sessionDateTime = new Date(`${booking.date}T${booking.time}:00`);
+  const now = new Date();
+  const diffMs = sessionDateTime.getTime() - now.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+  return {
+    eligible: diffHours >= 12,
+    hoursRemaining: Math.max(0, Math.round(diffHours * 10) / 10),
+  };
+}
+
+export function cancelBookingByIntern(bookingId: string): { success: boolean; message: string; refunded: boolean } {
+  const booking = getBookings().find((b) => b.id === bookingId);
+  if (!booking) return { success: false, message: "Booking not found", refunded: false };
+
+  const { eligible, hoursRemaining } = canCancelWithRefund(booking);
+  updateBookingStatus(bookingId, "cancelled");
+
+  const users = getUsers();
+  const intern = users.find((u) => u.id === booking.userId);
+  const internName = intern ? intern.name : "Intern";
+
+  if (eligible) {
+    addNotification({
+      userId: booking.userId,
+      message: `[${booking.id}] Your booking has been cancelled with full refund (${hoursRemaining}h before session).`,
+    });
+    addNotification({
+      userId: booking.mentorId,
+      message: `[${booking.id}] ${internName} cancelled their session scheduled for ${booking.date} at ${booking.time}.`,
+    });
+    return { success: true, message: `Booking cancelled successfully with full refund (cancelled ${hoursRemaining}h before session).`, refunded: true };
+  } else {
+    addNotification({
+      userId: booking.userId,
+      message: `[${booking.id}] Booking cancelled. Non-refundable as cancellation was made less than 12h before the session (${hoursRemaining}h left).`,
+    });
+    addNotification({
+      userId: booking.mentorId,
+      message: `[${booking.id}] ${internName} cancelled their session (less than 12h policy applied).`,
+    });
+    return { success: true, message: `Booking cancelled. Notice: Non-refundable because it is less than 12h before the session (${hoursRemaining}h left).`, refunded: false };
+  }
+}
+
+export function confirmBookingByMentor(bookingId: string): { success: boolean } {
+  const booking = getBookings().find((b) => b.id === bookingId);
+  if (!booking) return { success: false };
+
+  updateBookingStatus(bookingId, "confirmed");
+
+  const users = getUsers();
+  const mentor = users.find((u) => u.id === booking.mentorId);
+  const intern = users.find((u) => u.id === booking.userId);
+  const mentorName = mentor?.name || "Mentor";
+  const internName = intern?.name || "Intern";
+
+  // Notification & Email simulation to Intern
+  addNotification({
+    userId: booking.userId,
+    message: `🎉 [${booking.id}] Great news! ${mentorName} has confirmed your session on ${booking.date} at ${booking.time}. Please be ready on time!`,
+  });
+
+  // Notification & Email simulation to Mentor
+  addNotification({
+    userId: booking.mentorId,
+    message: `✅ [${booking.id}] You successfully confirmed the session with ${internName} on ${booking.date} at ${booking.time}. Be prepared!`,
+  });
+
+  return { success: true };
+}
+
+export function declineBookingByMentor(bookingId: string): { success: boolean } {
+  const booking = getBookings().find((b) => b.id === bookingId);
+  if (!booking) return { success: false };
+
+  updateBookingStatus(bookingId, "cancelled");
+
+  const users = getUsers();
+  const mentor = users.find((u) => u.id === booking.mentorId);
+  const mentorName = mentor?.name || "Mentor";
+
+  addNotification({
+    userId: booking.userId,
+    message: `⚠️ [${booking.id}] ${mentorName} was unable to accept your booking for ${booking.date}. Full refund processed.`,
+  });
+
+  return { success: true };
 }
 
 // ─── Reviews ──────────────────────────────────────────────────
