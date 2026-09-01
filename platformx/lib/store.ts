@@ -274,7 +274,53 @@ export function getBookingsByMentor(mentorId: string): Booking[] {
   return getBookings().filter((b) => b.mentorId === mentorId);
 }
 
+export function checkDoubleBooking(
+  mentorId: string,
+  userId: string,
+  date: string,
+  time: string,
+  excludeBookingId?: string
+): { conflict: boolean; message?: string } {
+  const activeBookings = getBookings().filter(
+    (b) =>
+      b.id !== excludeBookingId &&
+      ["pending", "confirmed", "upcoming", "in-progress", "rescheduled"].includes(b.status) &&
+      b.date === date &&
+      b.time === time
+  );
+
+  // Check if student already has a session at this time
+  const studentConflict = activeBookings.find((b) => b.userId === userId);
+  if (studentConflict) {
+    return {
+      conflict: true,
+      message: "You already have another session booked at this exact date and time.",
+    };
+  }
+
+  // Check if mentor is already booked at this time
+  const mentorConflict = activeBookings.find((b) => b.mentorId === mentorId);
+  if (mentorConflict) {
+    return {
+      conflict: true,
+      message: "This mentor is already booked for another session at this time slot. Please choose another time.",
+    };
+  }
+
+  return { conflict: false };
+}
+
 export function saveBooking(booking: Omit<Booking, "id" | "createdAt" | "status">): Booking {
+  const { conflict, message } = checkDoubleBooking(
+    booking.mentorId,
+    booking.userId,
+    booking.date,
+    booking.time
+  );
+  if (conflict) {
+    throw new Error(message);
+  }
+
   const bookings = getBookings();
   const newBooking: Booking = {
     ...booking,
@@ -284,6 +330,53 @@ export function saveBooking(booking: Omit<Booking, "id" | "createdAt" | "status"
   };
   setItem("px_bookings", [...bookings, newBooking]);
   return newBooking;
+}
+
+export function rescheduleBooking(
+  bookingId: string,
+  newDate: string,
+  newTime: string
+): { success: boolean; message: string } {
+  const booking = getBookings().find((b) => b.id === bookingId);
+  if (!booking) return { success: false, message: "Booking not found." };
+
+  const { conflict, message } = checkDoubleBooking(
+    booking.mentorId,
+    booking.userId,
+    newDate,
+    newTime,
+    bookingId
+  );
+  if (conflict) return { success: false, message: message || "Time slot conflict." };
+
+  const oldDate = booking.date;
+  const oldTime = booking.time;
+
+  const bookings = getBookings().map((b) =>
+    b.id === bookingId
+      ? {
+          ...b,
+          date: newDate,
+          time: newTime,
+          status: "rescheduled" as Booking["status"],
+          rescheduledFrom: { date: oldDate, time: oldTime },
+        }
+      : b
+  );
+  setItem("px_bookings", bookings);
+
+  // Send notifications
+  addNotification({
+    userId: booking.userId,
+    message: `🔄 [${booking.id}] Session rescheduled from ${oldDate} at ${oldTime} to ${newDate} at ${newTime}.`,
+  });
+
+  addNotification({
+    userId: booking.mentorId,
+    message: `🔄 [${booking.id}] Student rescheduled session from ${oldDate} at ${oldTime} to ${newDate} at ${newTime}.`,
+  });
+
+  return { success: true, message: "Session rescheduled successfully!" };
 }
 
 export function updateBookingStatus(bookingId: string, status: Booking["status"]): void {

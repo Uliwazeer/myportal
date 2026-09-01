@@ -4,12 +4,12 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { tracks as staticTracks, mentors as staticMentors, levels } from "@/lib/data";
+import { tracks as staticTracks, mentors as staticMentors, levels, sessionTypes } from "@/lib/data";
 import { getSession, saveBooking, addNotification, getAllMentors, getAllTracks } from "@/lib/store";
-import type { Level, Track, MentorData } from "@/lib/data";
+import type { Level, Track, MentorData, SessionType } from "@/lib/data";
 import toast, { Toaster } from "react-hot-toast";
 
-const STEPS = ["Track", "Mentor", "Date & Time", "Confirm"];
+const STEPS = ["Track", "Mentor", "Session & Time", "Confirm"];
 
 function getAvailableDates(count = 14) {
   const dates: string[] = [];
@@ -34,10 +34,12 @@ function BookContent() {
   const [selectedTrack, setSelectedTrack] = useState("");
   const [selectedLevel, setSelectedLevel] = useState<Level>("Beginner / Fresh");
   const [selectedMentor, setSelectedMentor] = useState(searchParams.get("mentor") || "");
+  const [selectedSessionType, setSelectedSessionType] = useState<SessionType>("Consultation");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [selectedDuration, setSelectedDuration] = useState<40 | 60>(40);
   const [topic, setTopic] = useState("");
+  const [agreePolicy, setAgreePolicy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [session, setSession] = useState<ReturnType<typeof getSession>>(null);
   const [booked, setBooked] = useState(false);
@@ -54,17 +56,13 @@ function BookContent() {
     setAllMentors(mList);
     setAllTracks(tList);
 
-    const mentorParam = searchParams.get("mentor") || s.mentorId;
+    const mentorParam = searchParams.get("mentor");
     if (mentorParam) {
       setSelectedMentor(mentorParam);
       const targetMentor = mList.find((m) => m.id === mentorParam);
       if (targetMentor && targetMentor.tracks.length > 0) {
         setSelectedTrack(targetMentor.tracks[0]);
-      } else if (s.trackSlug) {
-        setSelectedTrack(s.trackSlug);
       }
-    } else if (s.trackSlug) {
-      setSelectedTrack(s.trackSlug);
     }
   }, [router, searchParams]);
 
@@ -83,33 +81,44 @@ function BookContent() {
       toast.error("Please fill in all required fields.");
       return;
     }
+    if (!agreePolicy) {
+      toast.error("Please agree to the Cancellation Policy before confirming.");
+      return;
+    }
+
     setSubmitting(true);
-    const newBooking = saveBooking({
-      userId: session.id,
-      mentorId: selectedMentor,
-      trackSlug: selectedTrack,
-      topic,
-      date: selectedDate,
-      time: selectedTime,
-      duration: selectedDuration,
-    });
-    setBookedBookingId(newBooking.id);
+    try {
+      const newBooking = saveBooking({
+        userId: session.id,
+        mentorId: selectedMentor,
+        trackSlug: selectedTrack,
+        sessionType: selectedSessionType,
+        topic,
+        date: selectedDate,
+        time: selectedTime,
+        duration: selectedDuration,
+      });
+      setBookedBookingId(newBooking.id);
 
-    // Notification to Intern
-    addNotification({
-      userId: session.id,
-      message: `[${newBooking.id}] Your session request with ${mentor?.name} on ${selectedDate} at ${selectedTime} is pending mentor confirmation.`,
-    });
+      // Notification to Intern
+      addNotification({
+        userId: session.id,
+        message: `[${newBooking.id}] Your ${selectedSessionType} session request with ${mentor?.name} on ${selectedDate} at ${selectedTime} is pending mentor confirmation.`,
+      });
 
-    // Notification / Email simulation to Mentor
-    addNotification({
-      userId: selectedMentor,
-      message: `📩 [${newBooking.id}] New consultation request from ${session.name} for ${selectedDate} at ${selectedTime} (${selectedDuration} min). Please confirm or decline.`,
-    });
+      // Notification / Email simulation to Mentor
+      addNotification({
+        userId: selectedMentor,
+        message: `📩 [${newBooking.id}] New ${selectedSessionType} request from ${session.name} for ${selectedDate} at ${selectedTime} (${selectedDuration} min). Please confirm or decline.`,
+      });
 
-    setBooked(true);
-    setSubmitting(false);
-    toast.success("Session booked successfully!");
+      setBooked(true);
+      toast.success("Session booked successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to book session.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (booked) {
@@ -383,7 +392,7 @@ function BookContent() {
             </motion.div>
           )}
 
-          {/* Step 2: Date & Time */}
+          {/* Step 2: Session Type, Date & Time */}
           {step === 2 && (
             <motion.div
               key="step2"
@@ -392,7 +401,35 @@ function BookContent() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-5"
             >
-              <h2 className="text-lg font-semibold text-ink">Pick Date &amp; Time</h2>
+              <h2 className="text-lg font-semibold text-ink">Session Type &amp; Schedule</h2>
+
+              {/* Session Type Selection */}
+              <div>
+                <label className="block text-xs text-muted mb-2 uppercase tracking-wider">Select Session Type</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {sessionTypes.map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedSessionType(st.id);
+                        setSelectedDuration(st.defaultDuration);
+                      }}
+                      className={`text-left p-3 rounded-xl border transition-all ${
+                        selectedSessionType === st.id
+                          ? "border-accent bg-accent/10"
+                          : "border-border bg-surface hover:border-accent/40"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm font-semibold text-ink">{st.label}</p>
+                        <span className="text-[10px] font-mono text-muted">{st.defaultDuration} min</span>
+                      </div>
+                      <p className="text-xs text-muted mt-1 leading-snug">{st.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <div>
                 <label className="block text-xs text-muted mb-2 uppercase tracking-wider">Select Date</label>
@@ -423,7 +460,7 @@ function BookContent() {
               </div>
 
               <div>
-                <label className="block text-xs text-muted mb-2 uppercase tracking-wider">Select Time</label>
+                <label className="block text-xs text-muted mb-2 uppercase tracking-wider">Select Time Slot</label>
                 <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                   {timeSlots.map((t) => (
                     <button
@@ -431,7 +468,7 @@ function BookContent() {
                       onClick={() => setSelectedTime(t)}
                       className={`py-2 rounded-lg border text-sm transition-colors ${
                         selectedTime === t
-                          ? "border-accent bg-accent/10 text-accent"
+                          ? "border-accent bg-accent/10 text-accent font-semibold"
                           : "border-border text-muted hover:border-accent/50"
                       }`}
                     >
@@ -442,7 +479,7 @@ function BookContent() {
               </div>
 
               <div>
-                <label className="block text-xs text-muted mb-2 uppercase tracking-wider">Duration</label>
+                <label className="block text-xs text-muted mb-2 uppercase tracking-wider">Session Duration</label>
                 <div className="grid grid-cols-2 gap-3">
                   {([40, 60] as const).map((d) => (
                     <button
@@ -456,7 +493,7 @@ function BookContent() {
                     >
                       <p className="font-semibold text-ink">{d} min</p>
                       <p className="text-xs text-muted mt-1">
-                        {mentor?.consultationPrice ?? "—"} EGP
+                        {mentor ? (d === 40 ? mentor.consultationPrice : Math.round(mentor.consultationPrice * 1.4)) : "—"} EGP
                       </p>
                     </button>
                   ))}
@@ -464,10 +501,10 @@ function BookContent() {
               </div>
 
               <div>
-                <label className="block text-xs text-muted mb-2 uppercase tracking-wider">Topic / Question (optional)</label>
+                <label className="block text-xs text-muted mb-2 uppercase tracking-wider">Topic / Questions</label>
                 <textarea
                   rows={2}
-                  placeholder="What do you want to cover in this session?"
+                  placeholder="What specific challenge or topic do you want to cover in this session?"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none resize-none"
@@ -506,11 +543,12 @@ function BookContent() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-5"
             >
-              <h2 className="text-lg font-semibold text-ink">Confirm Booking</h2>
+              <h2 className="text-lg font-semibold text-ink">Confirm Booking &amp; Policy</h2>
 
               <div className="bg-surface rounded-2xl border border-border divide-y divide-border">
                 {[
                   { label: "Track", value: track?.name },
+                  { label: "Session Type", value: selectedSessionType },
                   { label: "Level", value: selectedLevel },
                   { label: "Mentor", value: `${mentor?.name} — ${mentor?.title}` },
                   {
@@ -524,20 +562,46 @@ function BookContent() {
                   },
                   { label: "Time", value: selectedTime },
                   { label: "Duration", value: `${selectedDuration} minutes` },
-                  { label: "Price", value: `${mentor?.consultationPrice ?? "—"} EGP` },
+                  {
+                    label: "Price",
+                    value: `${
+                      mentor
+                        ? selectedDuration === 40
+                          ? mentor.consultationPrice
+                          : Math.round(mentor.consultationPrice * 1.4)
+                        : "—"
+                    } EGP`,
+                  },
                   ...(topic ? [{ label: "Topic", value: topic }] : []),
                 ].map((r) => (
                   <div key={r.label} className="flex items-start gap-4 px-5 py-3.5">
-                    <span className="text-xs text-muted w-20 shrink-0 pt-0.5">{r.label}</span>
+                    <span className="text-xs text-muted w-24 shrink-0 pt-0.5">{r.label}</span>
                     <span className="text-sm text-ink">{r.value}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3">
-                <p className="text-xs text-yellow-300">
-                  ⚡ Your booking will be confirmed once the mentor accepts your request.
-                </p>
+              {/* Cancellation Policy Box */}
+              <div className="rounded-xl border border-border bg-surface2 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-ink">
+                  <span>🛡️ Cancellation &amp; Rescheduling Policy</span>
+                </div>
+                <div className="text-xs text-muted space-y-1.5 leading-relaxed">
+                  <p>• You can cancel or reschedule your session at any time before the session starts.</p>
+                  <p>• Cancellations made <strong>at least 12 hours before</strong> the scheduled start time receive a 100% full refund.</p>
+                  <p>• Late cancellations (&lt; 12 hours) or no-shows are non-refundable and recorded on attendance reliability.</p>
+                </div>
+                <label className="flex items-start gap-2.5 pt-2 border-t border-border cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={agreePolicy}
+                    onChange={(e) => setAgreePolicy(e.target.checked)}
+                    className="mt-0.5 accent-accent h-4 w-4 rounded border-border"
+                  />
+                  <span className="text-xs text-ink font-medium">
+                    I have read and agree to the Cancellation &amp; Rescheduling Policy.
+                  </span>
+                </label>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -549,7 +613,7 @@ function BookContent() {
                 </button>
                 <button
                   onClick={handleConfirm}
-                  disabled={submitting}
+                  disabled={submitting || !agreePolicy}
                   className="py-3 bg-accent text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 shadow-[0_0_15px_rgba(230,0,0,0.3)] transition-all"
                 >
                   {submitting ? (

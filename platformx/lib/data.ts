@@ -45,24 +45,45 @@ export type AvailabilitySlot = {
   endTime: string; // "22:00"
 };
 
+export type SessionType =
+  | "Consultation"
+  | "Mentorship"
+  | "Career Guidance"
+  | "Technical Review"
+  | "CV Review"
+  | "Mock Interview";
+
+export const sessionTypes: { id: SessionType; label: string; desc: string; defaultDuration: 40 | 60 }[] = [
+  { id: "Consultation", label: "Consultation", desc: "Targeted problem solving, architecture & system design", defaultDuration: 40 },
+  { id: "Mentorship", label: "Structured Mentorship", desc: "Long-term skill building & code review guidance", defaultDuration: 60 },
+  { id: "Career Guidance", label: "Career Guidance", desc: "Roadmap planning, promotions & job hunt advice", defaultDuration: 40 },
+  { id: "Technical Review", label: "Technical & Code Review", desc: "Detailed inspection of your project or PRs", defaultDuration: 60 },
+  { id: "CV Review", label: "CV & Portfolio Review", desc: "ATS optimization and portfolio refinement", defaultDuration: 40 },
+  { id: "Mock Interview", label: "Technical Mock Interview", desc: "Simulated IT engineering interview with feedback", defaultDuration: 60 },
+];
+
 export type BookingStatus =
   | "pending"
   | "confirmed"
   | "upcoming"
   | "in-progress"
   | "completed"
-  | "cancelled";
+  | "cancelled"
+  | "rescheduled"
+  | "no-show";
 
 export type Booking = {
   id: string;
   userId: string;
   mentorId: string;
   trackSlug: string;
+  sessionType?: SessionType;
   date: string; // ISO date string "2026-09-05"
   time: string; // "19:00"
   duration: 40 | 60;
   topic?: string;
   status: BookingStatus;
+  rescheduledFrom?: { date: string; time: string };
   createdAt: string;
 };
 

@@ -58,6 +58,7 @@ export default function RegisterForm() {
   const [mentorList, setMentorList] = useState<MentorData[]>(staticMentors);
   const [mentorTrackOptions, setMentorTrackOptions] = useState(tracks);
   const [customTrackInput, setCustomTrackInput] = useState("");
+  const [roleTitleSelect, setRoleTitleSelect] = useState("Student");
 
   useEffect(() => {
     const list = getAllMentors();
@@ -596,6 +597,45 @@ export default function RegisterForm() {
             onChange={(e) => update("phone", e.target.value)}
           />
           <p className="text-[11px] text-muted mt-1">Egyptian number (01x) required</p>
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Current Role / Job Title *</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <select
+              className={inputClass}
+              value={roleTitleSelect}
+              onChange={(e) => {
+                setRoleTitleSelect(e.target.value);
+                if (e.target.value !== "Other") {
+                  update("title", e.target.value);
+                } else {
+                  update("title", "");
+                }
+              }}
+            >
+              <option value="Student">Student</option>
+              <option value="Intern">Intern</option>
+              <option value="Junior Developer">Junior Developer</option>
+              <option value="Software Engineer">Software Engineer</option>
+              <option value="Frontend Engineer">Frontend Engineer</option>
+              <option value="Backend Engineer">Backend Engineer</option>
+              <option value="DevOps Engineer">DevOps Engineer</option>
+              <option value="Cloud Engineer">Cloud Engineer</option>
+              <option value="Cyber Security Specialist">Cyber Security Specialist</option>
+              <option value="Data Scientist">Data Scientist</option>
+              <option value="SRE">SRE</option>
+              <option value="Other">Other (Type below)</option>
+            </select>
+            {roleTitleSelect === "Other" && (
+              <input
+                required
+                className={inputClass}
+                placeholder="Type your current job title..."
+                value={form.title}
+                onChange={(e) => update("title", e.target.value)}
+              />
+            )}
+          </div>
         </div>
       </div>
 
