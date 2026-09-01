@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #0b0f17;
+  color: #e7ecf3;
+}
+
+::selection {
+  background-color: #ffb84d;
+  color: #0b0f17;
+}
+
+:focus-visible {
+  outline: 2px solid #ffb84d;
+  outline-offset: 2px;
+}
+
+.status-dot {
+  box-shadow: 0 0 0 3px rgba(255, 184, 77, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
