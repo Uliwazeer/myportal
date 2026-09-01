@@ -41,9 +41,96 @@ export function getUserById(id: string): UserProfile | undefined {
 }
 
 export function getAllMentors(): import("./data").MentorData[] {
-  const { mentors: staticMentors } = require("./data");
+  const { mentors: staticMentors, tracks: staticTracks } = require("./data");
   const users = getUsers();
+  const bookings = getBookings();
+  const reviews = getItem<Review>("px_reviews");
   const registeredMentors = users.filter((u) => u.role === "mentor");
+
+  // Helper to compute dynamic data for ANY mentor (static or dynamic)
+  function computeMentorStats(
+    base: import("./data").MentorData,
+    mentorId: string
+  ): import("./data").MentorData {
+    // 1. Find all bookings with this mentor
+    const mentorBookings = bookings.filter((b) => b.mentorId === mentorId);
+    
+    // 2. Find all interns assigned to this mentor
+    const assignedInterns = users.filter(
+      (u) => u.role === "intern" && u.mentorId === mentorId
+    );
+
+    // 3. Unique client/student user IDs from bookings and assigned interns
+    const bookingClientIds = mentorBookings.map((b) => b.userId);
+    const internClientIds = assignedInterns.map((u) => u.id);
+    const uniqueClientIds = Array.from(new Set([...bookingClientIds, ...internClientIds]));
+
+    const dynamicMenteesCount = uniqueClientIds.length;
+    const dynamicConsultations = mentorBookings.length;
+    const dynamicHours = mentorBookings.reduce((sum, b) => sum + (b.duration || 40) / 60, 0);
+
+    // 4. Generate real mentored people from actual bookings & intern registrations
+    const realMentoredPeople: import("./data").MentoredPerson[] = [];
+
+    // From actual bookings
+    for (const b of mentorBookings) {
+      const student = users.find((u) => u.id === b.userId);
+      const studentReview = reviews.find((r) => r.bookingId === b.id || (r.userId === b.userId && r.mentorId === mentorId));
+      const trackObj = staticTracks.find((t: import("./data").Track) => t.slug === b.trackSlug);
+      const trackName = trackObj?.name || b.trackSlug;
+
+      realMentoredPeople.push({
+        name: student?.name || "Student",
+        type: student?.role === "intern" ? "Internship" : "Consultation",
+        topicOrTrack: b.topic ? `${trackName}: ${b.topic}` : trackName,
+        rating: studentReview?.rating || 5,
+        date: b.date ? new Date(b.date + "T00:00:00").toLocaleDateString("en", { month: "short", year: "numeric" }) : "Recent",
+        feedback: studentReview?.comment || `Completed ${b.duration || 40}-min session on ${trackName}.`,
+      });
+    }
+
+    // From assigned interns without explicit booking yet
+    for (const intern of assignedInterns) {
+      if (!mentorBookings.some((b) => b.userId === intern.id)) {
+        const trackObj = staticTracks.find((t: import("./data").Track) => t.slug === intern.trackSlug);
+        realMentoredPeople.push({
+          name: intern.name,
+          type: "Internship",
+          topicOrTrack: trackObj?.name || intern.trackSlug || "Engineering Track",
+          rating: 5,
+          date: new Date(intern.createdAt).toLocaleDateString("en", { month: "short", year: "numeric" }),
+          feedback: `Enrolled as an Intern in ${trackObj?.name || intern.trackSlug || "Track"}.`,
+        });
+      }
+    }
+
+    // Combine with static featured list if available
+    const combinedMentored = [
+      ...realMentoredPeople,
+      ...(base.mentoredPeople || []).filter(
+        (sp) => !realMentoredPeople.some((rp) => rp.name.toLowerCase() === sp.name.toLowerCase())
+      ),
+    ];
+
+    const mentorReviews = reviews.filter((r) => r.mentorId === mentorId);
+    const avgRating = mentorReviews.length > 0
+      ? Math.round((mentorReviews.reduce((sum, r) => sum + r.rating, 0) / mentorReviews.length) * 10) / 10
+      : base.rating;
+
+    return {
+      ...base,
+      rating: avgRating,
+      reviewCount: (base.reviewCount || 0) + mentorReviews.length,
+      completedConsultations: (base.completedConsultations || 0) + dynamicConsultations,
+      menteesCount: (base.menteesCount || 0) + dynamicMenteesCount,
+      consultationHours: Math.round(((base.consultationHours || 0) + dynamicHours) * 10) / 10,
+      mentoredPeople: combinedMentored,
+    };
+  }
+
+  const enrichedStaticMentors = staticMentors.map((sm: import("./data").MentorData) =>
+    computeMentorStats(sm, sm.id)
+  );
 
   const dynamicMentors: import("./data").MentorData[] = registeredMentors.map((m) => {
     const initials = m.name
@@ -53,7 +140,7 @@ export function getAllMentors(): import("./data").MentorData[] {
       .toUpperCase()
       .slice(0, 2);
 
-    return {
+    const baseMentor: import("./data").MentorData = {
       id: m.id,
       name: m.name,
       title: m.title || "Mentor",
@@ -79,9 +166,11 @@ export function getAllMentors(): import("./data").MentorData[] {
       color: "bg-red-600",
       mentoredPeople: [],
     };
+
+    return computeMentorStats(baseMentor, m.id);
   });
 
-  return [...staticMentors, ...dynamicMentors];
+  return [...enrichedStaticMentors, ...dynamicMentors];
 }
 
 export function getAllTracks(): import("./data").Track[] {

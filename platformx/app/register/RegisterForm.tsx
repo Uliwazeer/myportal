@@ -56,6 +56,8 @@ export default function RegisterForm() {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [mentorList, setMentorList] = useState<MentorData[]>(staticMentors);
+  const [mentorTrackOptions, setMentorTrackOptions] = useState(tracks);
+  const [customTrackInput, setCustomTrackInput] = useState("");
 
   useEffect(() => {
     const list = getAllMentors();
@@ -68,6 +70,33 @@ export default function RegisterForm() {
       }));
     }
   }, []);
+
+  function handleAddCustomTrack() {
+    const trimmed = customTrackInput.trim();
+    if (!trimmed) return;
+    const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    if (!slug) return;
+
+    if (!mentorTrackOptions.some((t) => t.slug === slug)) {
+      setMentorTrackOptions((prev) => [
+        ...prev,
+        {
+          slug,
+          name: trimmed,
+          tagline: `Curated ${trimmed} track`,
+          level: "Mid-Level" as import("@/lib/data").Level,
+          durationWeeks: 8,
+          modules: [],
+          finalProject: `End-to-end ${trimmed} production project`,
+        },
+      ]);
+    }
+
+    if (!form.mentorTracks.includes(slug)) {
+      setForm((f) => ({ ...f, mentorTracks: [...f.mentorTracks, slug] }));
+    }
+    setCustomTrackInput("");
+  }
 
   // ── Form state ─────────────────────────────────────────────────────────────
   const [form, setForm] = useState({
@@ -692,16 +721,16 @@ export default function RegisterForm() {
 
           {/* Track selection */}
           <div>
-            <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-2">Tracks You Teach</label>
-            <div className="grid grid-cols-2 gap-2">
-              {tracks.map((t) => (
+            <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-2">Tracks You Teach *</label>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              {mentorTrackOptions.map((t) => (
                 <button
                   key={t.slug}
                   type="button"
                   onClick={() => toggleMentorTrack(t.slug)}
                   className={`text-left px-3 py-2 rounded-lg text-xs border transition-all ${
                     form.mentorTracks.includes(t.slug)
-                      ? "border-accent bg-accent/10 text-accent"
+                      ? "border-accent bg-accent/10 text-accent font-semibold"
                       : "border-border text-muted hover:border-accent/50"
                   }`}
                 >
@@ -709,6 +738,35 @@ export default function RegisterForm() {
                 </button>
               ))}
             </div>
+
+            {/* Custom Track Input */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Add custom track (e.g. Prompt Engineering, IoT)..."
+                value={customTrackInput}
+                onChange={(e) => setCustomTrackInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddCustomTrack();
+                  }
+                }}
+                className={`${inputClass} text-xs`}
+              />
+              <button
+                type="button"
+                onClick={handleAddCustomTrack}
+                className="px-4 py-2 bg-surface2 border border-border text-xs font-medium text-ink hover:border-accent rounded-xl shrink-0"
+              >
+                + Add Track
+              </button>
+            </div>
+            {form.mentorTracks.length > 0 && (
+              <p className="text-[11px] text-muted mt-2">
+                Selected: {form.mentorTracks.join(", ")}
+              </p>
+            )}
           </div>
 
           {/* Level selection */}

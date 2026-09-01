@@ -218,9 +218,16 @@ function BookContent() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-5"
             >
-              <h2 className="text-lg font-semibold text-ink">Choose a Track</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-ink">Choose a Track</h2>
+                {mentor && (
+                  <span className="text-xs text-muted">
+                    Showing tracks offered by <span className="text-accent font-semibold">{mentor.name}</span>
+                  </span>
+                )}
+              </div>
               <div className="grid gap-3">
-                {allTracks.map((t) => (
+                {(mentor ? allTracks.filter((t) => mentor.tracks.includes(t.slug)) : allTracks).map((t) => (
                   <button
                     key={t.slug}
                     onClick={() => setSelectedTrack(t.slug)}

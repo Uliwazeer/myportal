@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { tracks } from "@/lib/data";
-import { getReviewsByMentor, getSession, saveReview, getMentorById } from "@/lib/store";
+import { getReviewsByMentor, getSession, saveReview, getMentorById, getAllTracks } from "@/lib/store";
 import type { Review, UserProfile, MentorData } from "@/lib/data";
 
 export default function MentorProfilePage() {
@@ -48,7 +48,8 @@ export default function MentorProfilePage() {
     </div>
   );
 
-  const mentorTracks = tracks.filter(t => mentor.tracks.includes(t.slug));
+  const allTracks = getAllTracks();
+  const mentorTracks = allTracks.filter(t => mentor.tracks.includes(t.slug));
   const totalReviews = reviews.length || mentor.reviewCount;
   const avgRating = reviews.length > 0
     ? (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1)
@@ -94,15 +95,15 @@ export default function MentorProfilePage() {
               <div className="grid grid-cols-2 gap-2 text-center">
                 <div className="bg-surface2 p-2.5 rounded-xl border border-border">
                   <p className="text-lg font-bold font-mono text-accent">{mentor.completedConsultations}</p>
-                  <p className="text-[10px] text-muted">Completed Consultations</p>
+                  <p className="text-[10px] text-muted">Consultations</p>
+                </div>
+                <div className="bg-surface2 p-2.5 rounded-xl border border-border">
+                  <p className="text-lg font-bold font-mono text-blue-400">{mentor.menteesCount || (mentor.mentoredPeople?.length || 0)}</p>
+                  <p className="text-[10px] text-muted">Mentees / Interns</p>
                 </div>
                 <div className="bg-surface2 p-2.5 rounded-xl border border-border">
                   <p className="text-lg font-bold font-mono text-green-400">{mentor.responseRate}%</p>
                   <p className="text-[10px] text-muted">Response Rate</p>
-                </div>
-                <div className="bg-surface2 p-2.5 rounded-xl border border-border">
-                  <p className="text-lg font-bold font-mono text-blue-400">{mentor.attendanceRate}%</p>
-                  <p className="text-[10px] text-muted">Attendance Rate</p>
                 </div>
                 <div className="bg-surface2 p-2.5 rounded-xl border border-border">
                   <p className="text-lg font-bold font-mono text-ink">&lt; 1%</p>
