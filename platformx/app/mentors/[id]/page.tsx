@@ -154,6 +154,49 @@ export default function MentorProfilePage() {
               </div>
             </div>
 
+            {/* People Mentored Section */}
+            <div className="bg-surface rounded-2xl border border-border p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-ink">People Mentored &amp; Consultations</h2>
+                  <p className="text-xs text-muted mt-0.5">Real engineers and learners who completed sessions with {mentor.name.split(" ")[0]}</p>
+                </div>
+                <span className="text-xs font-mono bg-accent/10 text-accent border border-accent/30 rounded px-2 py-0.5 font-semibold">
+                  {mentor.mentoredPeople?.length || 0} Listed
+                </span>
+              </div>
+
+              <div className="grid gap-3">
+                {mentor.mentoredPeople?.map((person, idx) => (
+                  <div key={idx} className="p-4 bg-surface2 rounded-xl border border-border/70 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent/40 flex items-center justify-center text-xs font-bold text-accent">
+                          {person.name.split(" ").map(n => n[0]).join("")}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-ink leading-tight">{person.name}</p>
+                          <p className="text-xs text-muted">{person.topicOrTrack}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-mono rounded px-2 py-0.5 border ${
+                          person.type === "Internship" 
+                            ? "bg-blue-950/40 text-blue-400 border-blue-800" 
+                            : "bg-green-950/40 text-green-400 border-green-800"
+                        }`}>
+                          {person.type}
+                        </span>
+                        <span className="text-xs text-yellow-400">★ {person.rating}</span>
+                        <span className="text-[11px] text-muted">{person.date}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted italic pl-10">&ldquo;{person.feedback}&rdquo;</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="bg-surface rounded-2xl border border-border p-6">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-sm font-semibold text-ink">Reviews ({totalReviews})</h2>

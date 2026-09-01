@@ -40,6 +40,54 @@ export function getUserById(id: string): UserProfile | undefined {
   return getUsers().find((u) => u.id === id);
 }
 
+export function getAllMentors(): import("./data").MentorData[] {
+  const { mentors: staticMentors } = require("./data");
+  const users = getUsers();
+  const registeredMentors = users.filter((u) => u.role === "mentor");
+
+  const dynamicMentors: import("./data").MentorData[] = registeredMentors.map((m) => {
+    const initials = m.name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+
+    return {
+      id: m.id,
+      name: m.name,
+      title: m.title || "Mentor",
+      bio: m.bio || `Specialist with ${m.yearsExperience || 3}+ years of industry experience.`,
+      tracks: m.tracks && m.tracks.length > 0 ? m.tracks : ["platform-engineer"],
+      skills: m.skills && m.skills.length > 0 ? m.skills : ["Architecture", "Engineering"],
+      level: (m.level as import("./data").Level) || "Senior",
+      yearsExperience: m.yearsExperience || 5,
+      consultationPrice: m.consultationPrice || 250,
+      rating: 5.0,
+      reviewCount: 0,
+      completedConsultations: 0,
+      menteesCount: 0,
+      consultationHours: 0,
+      responseRate: 100,
+      attendanceRate: 100,
+      availability: [
+        { day: "Monday", startTime: "18:00", endTime: "22:00" },
+        { day: "Wednesday", startTime: "18:00", endTime: "22:00" },
+        { day: "Saturday", startTime: "14:00", endTime: "20:00" },
+      ],
+      initials: initials || "M",
+      color: "bg-red-600",
+      mentoredPeople: [],
+    };
+  });
+
+  return [...staticMentors, ...dynamicMentors];
+}
+
+export function getMentorById(id: string): import("./data").MentorData | undefined {
+  return getAllMentors().find((m) => m.id === id);
+}
+
 export function saveUser(user: Omit<UserProfile, "id" | "createdAt">): UserProfile {
   const users = getUsers();
   const newUser: UserProfile = {

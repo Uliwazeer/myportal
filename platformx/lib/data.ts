@@ -87,6 +87,15 @@ export type Notification = {
 
 // ─── Mentors ──────────────────────────────────────────────────────────────────
 
+export type MentoredPerson = {
+  name: string;
+  type: "Internship" | "Consultation";
+  topicOrTrack: string;
+  rating: number;
+  date: string;
+  feedback: string;
+};
+
 export type MentorData = {
   id: string;
   name: string;
@@ -100,6 +109,8 @@ export type MentorData = {
   rating: number;
   reviewCount: number;
   completedConsultations: number;
+  menteesCount: number;
+  consultationHours: number;
   responseRate: number; // percentage
   attendanceRate: number; // percentage
   availability: AvailabilitySlot[];
@@ -110,6 +121,7 @@ export type MentorData = {
     comment: string;
     rating: number;
   };
+  mentoredPeople: MentoredPerson[];
 };
 
 export const mentors: MentorData[] = [
@@ -136,6 +148,8 @@ export const mentors: MentorData[] = [
     rating: 4.9,
     reviewCount: 87,
     completedConsultations: 142,
+    menteesCount: 38,
+    consultationHours: 195,
     responseRate: 99,
     attendanceRate: 100,
     availability: [
@@ -150,6 +164,40 @@ export const mentors: MentorData[] = [
       comment: "Super in-depth Kubernetes session. Solved our production ingress issue in 40 minutes!",
       rating: 5,
     },
+    mentoredPeople: [
+      {
+        name: "Ahmed Mahmoud",
+        type: "Internship",
+        topicOrTrack: "Platform Engineering",
+        rating: 5,
+        date: "Aug 2026",
+        feedback: "Learned GitOps and ArgoCD architecture from scratch. Now working with production clusters.",
+      },
+      {
+        name: "Khaled Hassan",
+        type: "Consultation",
+        topicOrTrack: "Kubernetes Cluster Ingress & SSL",
+        rating: 5,
+        date: "Aug 2026",
+        feedback: "Fixed our production Cilium network policy conflict in one 60-min session.",
+      },
+      {
+        name: "Nouran Tarek",
+        type: "Internship",
+        topicOrTrack: "DevOps & Cloud",
+        rating: 4.9,
+        date: "Jul 2026",
+        feedback: "Ali guided me through CI/CD pipelines with GitHub Actions and Terraform.",
+      },
+      {
+        name: "Mostafa Adel",
+        type: "Consultation",
+        topicOrTrack: "Prometheus Monitoring Stack",
+        rating: 5,
+        date: "Jul 2026",
+        feedback: "Configured multi-tenant Grafana dashboards and alerts in under an hour.",
+      },
+    ],
   },
   {
     id: "adnan",
@@ -174,6 +222,8 @@ export const mentors: MentorData[] = [
     rating: 4.8,
     reviewCount: 64,
     completedConsultations: 98,
+    menteesCount: 29,
+    consultationHours: 135,
     responseRate: 97,
     attendanceRate: 99,
     availability: [
@@ -188,6 +238,32 @@ export const mentors: MentorData[] = [
       comment: "Adnan helped architect our microservices communication with Redis and Kafka seamlessly.",
       rating: 5,
     },
+    mentoredPeople: [
+      {
+        name: "Mohamed Samir",
+        type: "Consultation",
+        topicOrTrack: "Microservices & Redis Caching",
+        rating: 5,
+        date: "Aug 2026",
+        feedback: "Solved database deadlocks and redesigned our PostgreSQL queries.",
+      },
+      {
+        name: "Youssef Ibrahim",
+        type: "Internship",
+        topicOrTrack: "Backend Engineering",
+        rating: 4.8,
+        date: "Jul 2026",
+        feedback: "Built a production-ready GraphQL authentication service under Adnan's mentorship.",
+      },
+      {
+        name: "Dina Farouk",
+        type: "Consultation",
+        topicOrTrack: "NestJS Clean Architecture",
+        rating: 5,
+        date: "Jul 2026",
+        feedback: "Clear architectural guidance for our company's REST API revamp.",
+      },
+    ],
   },
   {
     id: "yamen",
@@ -212,6 +288,8 @@ export const mentors: MentorData[] = [
     rating: 4.9,
     reviewCount: 52,
     completedConsultations: 85,
+    menteesCount: 24,
+    consultationHours: 110,
     responseRate: 98,
     attendanceRate: 100,
     availability: [
@@ -226,6 +304,32 @@ export const mentors: MentorData[] = [
       comment: "Outstanding mentor. Taught me realistic web vulnerability testing and reporting.",
       rating: 5,
     },
+    mentoredPeople: [
+      {
+        name: "Omar Kamal",
+        type: "Internship",
+        topicOrTrack: "Cyber Security Specialist",
+        rating: 5,
+        date: "Aug 2026",
+        feedback: "Hands-on penetration testing labs and real OWASP vulnerability hunting.",
+      },
+      {
+        name: "Amr Nabil",
+        type: "Consultation",
+        topicOrTrack: "AWS Security Audit & IAM",
+        rating: 4.9,
+        date: "Jul 2026",
+        feedback: "Conducted security hardening and identified open S3 permissions instantly.",
+      },
+      {
+        name: "Salma Saeed",
+        type: "Internship",
+        topicOrTrack: "Web Application Security",
+        rating: 5,
+        date: "Jun 2026",
+        feedback: "Yamen's mentorship helped me land my first Junior Security Analyst job.",
+      },
+    ],
   },
   {
     id: "sajid",
@@ -250,6 +354,8 @@ export const mentors: MentorData[] = [
     rating: 4.7,
     reviewCount: 41,
     completedConsultations: 63,
+    menteesCount: 21,
+    consultationHours: 85,
     responseRate: 96,
     attendanceRate: 98,
     availability: [
@@ -263,6 +369,24 @@ export const mentors: MentorData[] = [
       comment: "Extremely knowledgeable in Linux performance troubleshooting and server clustering.",
       rating: 5,
     },
+    mentoredPeople: [
+      {
+        name: "Karim Tawfik",
+        type: "Consultation",
+        topicOrTrack: "Linux Server Performance & Storage",
+        rating: 5,
+        date: "Aug 2026",
+        feedback: "Resolved high CPU load and configured automated LVM backups on Ubuntu servers.",
+      },
+      {
+        name: "Ziad Fathi",
+        type: "Internship",
+        topicOrTrack: "System Administration & DevOps",
+        rating: 4.7,
+        date: "Jul 2026",
+        feedback: "Learned Active Directory migration and enterprise bash automation scripts.",
+      },
+    ],
   },
 ];
 

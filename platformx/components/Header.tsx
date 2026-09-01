@@ -128,8 +128,27 @@ export default function Header() {
             </svg>
           </button>
 
+          {/* Notification Bell Dropdown */}
+          {session && (
+            <Link
+              href={`${dashboardHref}?tab=notifications`}
+              className="relative p-1.5 text-muted hover:text-ink transition-colors rounded-lg hover:bg-surface2"
+              title="Notifications"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+              </svg>
+              {unread > 0 && (
+                <span className="absolute top-0 right-0 bg-accent text-white font-mono text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center animate-pulse">
+                  {unread}
+                </span>
+              )}
+            </Link>
+          )}
+
           {session ? (
-            <Link href={dashboardHref} className="hidden md:flex items-center gap-2 text-sm text-ink">
+            <Link href={dashboardHref} className="flex items-center gap-2 text-sm text-ink pl-1">
               <span className="h-7 w-7 rounded-full bg-accent/20 border border-accent flex items-center justify-center text-xs font-bold text-accent">
                 {session.name[0].toUpperCase()}
               </span>
