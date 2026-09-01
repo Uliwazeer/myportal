@@ -2,54 +2,113 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { tracks } from "@/lib/data";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import toast, { Toaster } from "react-hot-toast";
+import { tracks, mentors, levels } from "@/lib/data";
+import {
+  getUserByEmail,
+  getUserByPhone,
+  saveUser,
+  setSession,
+} from "@/lib/store";
 
-type Step = "form" | "otp";
+type Role = "intern" | "mentor" | "consultation";
+type Step = "role" | "form" | "otp" | "success";
 type Status = "idle" | "loading" | "error";
 
 const OTP_SECONDS = 60;
 
-const mentors = [
-  { id: "ali", name: "Ali Wazeer", track: "platform-engineer" },
-  { id: "adnan", name: "Adnan", track: "backend-engineer" },
-  { id: "yamen", name: "Yamen", track: "cyber-security" },
-  { id: "sajid", name: "Sajid", track: "system-admin" },
-];
+const roleInfo = {
+  intern: {
+    label: "Intern",
+    icon: "🎓",
+    desc: "Join a structured learning program with a dedicated mentor",
+    color: "border-blue-500/50 bg-blue-500/5 hover:border-blue-500",
+  },
+  mentor: {
+    label: "Mentor",
+    icon: "🧑‍💼",
+    desc: "Share your expertise and guide the next generation of engineers",
+    color: "border-accent/50 bg-accent/5 hover:border-accent",
+  },
+  consultation: {
+    label: "Consultation",
+    icon: "💬",
+    desc: "Book expert sessions to solve specific technical challenges",
+    color: "border-green-500/50 bg-green-500/5 hover:border-green-500",
+  },
+};
 
 export default function RegisterForm() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("form");
+  const [role, setRole] = useState<Role | null>(null);
+  const [step, setStep] = useState<Step>("role");
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const [debugCode, setDebugCode] = useState<string | null>(null);
-  const [otp, setOtp] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpToken, setOtpToken] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(OTP_SECONDS);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // ── Form state ─────────────────────────────────────────────────────────────
   const [form, setForm] = useState({
-    role: "Intern",
-    mentor: mentors[0].id,
+    // Shared
     name: "",
     email: "",
     phone: "",
+    // Intern
     university: "",
-    level: "Beginner",
-    track: mentors[0].track,
+    level: levels[0],
+    mentorId: mentors[0].id,
+    trackSlug: mentors[0].tracks[0],
     github: "",
+    // Mentor
+    title: "",
+    bio: "",
+    skills: "",
+    yearsExperience: "",
+    consultationPrice: "",
+    mentorTracks: [] as string[],
+    mentorLevels: [] as string[],
+    // Consultation
+    topic: "",
   });
 
-  function update<K extends keyof typeof form>(key: K, value: string) {
-    if (key === "role") {
-      setForm((f) => ({ ...f, role: value }));
-    } else if (key === "mentor") {
-      const selectedMentor = mentors.find((m) => m.id === value);
-      setForm((f) => ({ ...f, mentor: value, track: selectedMentor ? selectedMentor.track : f.track }));
+  function update<K extends keyof typeof form>(key: K, value: string | string[]) {
+    if (key === "mentorId") {
+      const m = mentors.find((m) => m.id === value);
+      setForm((f) => ({
+        ...f,
+        mentorId: value as string,
+        trackSlug: m ? m.tracks[0] : f.trackSlug,
+      }));
     } else {
       setForm((f) => ({ ...f, [key]: value }));
     }
   }
 
+  function toggleMentorTrack(slug: string) {
+    setForm((f) => ({
+      ...f,
+      mentorTracks: f.mentorTracks.includes(slug)
+        ? f.mentorTracks.filter((t) => t !== slug)
+        : [...f.mentorTracks, slug],
+    }));
+  }
+
+  function toggleMentorLevel(lvl: string) {
+    setForm((f) => ({
+      ...f,
+      mentorLevels: f.mentorLevels.includes(lvl)
+        ? f.mentorLevels.filter((l) => l !== lvl)
+        : [...f.mentorLevels, lvl],
+    }));
+  }
+
+  // ── OTP countdown ──────────────────────────────────────────────────────────
   function startCountdown() {
     if (timerRef.current) clearInterval(timerRef.current);
     setSecondsLeft(OTP_SECONDS);
@@ -70,14 +129,42 @@ export default function RegisterForm() {
     };
   }, []);
 
-  async function requestCode() {
-    // Egyptian phone number validation
+  // ── Validation ─────────────────────────────────────────────────────────────
+  function validateForm(): boolean {
     const phoneRegex = /^01[0125][0-9]{8}$/;
+    if (!form.name.trim()) { setError("Full name is required."); return false; }
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setError("Please enter a valid email address.");
+      return false;
+    }
     if (!phoneRegex.test(form.phone)) {
       setError("Please enter a valid Egyptian phone number (e.g. 01012345678)");
-      return;
+      return false;
     }
 
+    // Duplicate check (client-side localStorage)
+    const existingEmail = getUserByEmail(form.email);
+    if (existingEmail) {
+      setError("This email is already registered. Please sign in instead.");
+      return false;
+    }
+    const existingPhone = getUserByPhone(form.phone);
+    if (existingPhone) {
+      setError("This phone number is already registered. Please sign in instead.");
+      return false;
+    }
+
+    if (role === "mentor" && !form.title.trim()) {
+      setError("Professional title is required.");
+      return false;
+    }
+
+    return true;
+  }
+
+  // ── Request OTP ────────────────────────────────────────────────────────────
+  async function requestOtp() {
+    if (!validateForm()) return;
     setStatus("loading");
     setError("");
     setDebugCode(null);
@@ -91,30 +178,35 @@ export default function RegisterForm() {
       const data = await res.json();
 
       if (!data.ok) {
-        setError(data.error || "Failed to send OTP code.");
+        setError(data.error || "Failed to send verification code.");
         setStatus("error");
         return;
       }
 
       if (data.debugCode) setDebugCode(data.debugCode);
-      setOtpToken(data.token);
-      setOtp("");
+      setOtpToken(data.token || "");
+      setOtp(["", "", "", "", "", ""]);
       setStep("otp");
       setStatus("idle");
       startCountdown();
+      setTimeout(() => inputRefs.current[0]?.focus(), 100);
     } catch {
-      setError("Server connection failed.");
+      setError("Server connection failed. Please try again.");
       setStatus("error");
     }
   }
 
   async function handleFormSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await requestCode();
+    await requestOtp();
   }
 
+  // ── Verify OTP & Register ──────────────────────────────────────────────────
   async function handleOtpSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const code = otp.join("");
+    if (code.length < 6) { toast.error("Enter all 6 digits."); return; }
+
     setStatus("loading");
     setError("");
 
@@ -122,20 +214,50 @@ export default function RegisterForm() {
       const verifyRes = await fetch("/api/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email, code: otp, token: otpToken }),
+        body: JSON.stringify({ email: form.email, code, token: otpToken }),
       });
       const verifyData = await verifyRes.json();
 
       if (!verifyData.ok) {
-        setError(verifyData.error || "Invalid code.");
+        setError(verifyData.error || "Invalid verification code.");
         setStatus("error");
         return;
+      }
+
+      // Build user object for API
+      const payload: Record<string, unknown> = {
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        role,
+        ticket: verifyData.ticket,
+      };
+
+      if (role === "intern") {
+        Object.assign(payload, {
+          university: form.university,
+          level: form.level,
+          trackSlug: form.trackSlug,
+          mentorId: form.mentorId,
+          github: form.github,
+        });
+      } else if (role === "mentor") {
+        Object.assign(payload, {
+          title: form.title,
+          bio: form.bio,
+          skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
+          tracks: form.mentorTracks,
+          yearsExperience: Number(form.yearsExperience) || 0,
+          consultationPrice: Number(form.consultationPrice) || 0,
+        });
+      } else if (role === "consultation") {
+        Object.assign(payload, { topic: form.topic });
       }
 
       const registerRes = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, ticket: verifyData.ticket }),
+        body: JSON.stringify(payload),
       });
       const registerData = await registerRes.json();
 
@@ -145,163 +267,282 @@ export default function RegisterForm() {
         return;
       }
 
-      window.localStorage.setItem("px_registration", JSON.stringify(form));
-      router.push("/dashboard");
+      // Save to localStorage & session
+      const savedUser = saveUser({
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        role: role!,
+        ...(role === "intern" && {
+          university: form.university,
+          level: form.level as import("@/lib/data").Level,
+          trackSlug: form.trackSlug,
+          mentorId: form.mentorId,
+          github: form.github,
+          progress: 0,
+        }),
+        ...(role === "mentor" && {
+          title: form.title,
+          bio: form.bio,
+          skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
+          tracks: form.mentorTracks,
+          yearsExperience: Number(form.yearsExperience) || 0,
+          consultationPrice: Number(form.consultationPrice) || 0,
+        }),
+        ...(role === "consultation" && { topic: form.topic }),
+      });
+
+      setSession(savedUser);
+      setStatus("idle");
+      setStep("success");
+
+      setTimeout(() => {
+        router.push(`/dashboard/${role}`);
+      }, 1500);
     } catch {
-      setError("Server connection failed.");
+      setError("Server connection failed. Please try again.");
       setStatus("error");
     }
   }
 
+  // ── OTP input handlers ─────────────────────────────────────────────────────
+  function handleOtpChange(idx: number, val: string) {
+    const char = val.replace(/\D/, "");
+    const next = [...otp];
+    next[idx] = char;
+    setOtp(next);
+    if (char && idx < 5) inputRefs.current[idx + 1]?.focus();
+  }
+
+  function handleOtpKeyDown(idx: number, e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Backspace" && !otp[idx] && idx > 0) {
+      inputRefs.current[idx - 1]?.focus();
+    }
+  }
+
+  function handleOtpPaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const next = ["", "", "", "", "", ""];
+    pasted.split("").forEach((c, i) => { next[i] = c; });
+    setOtp(next);
+    const lastFilled = Math.min(pasted.length, 5);
+    inputRefs.current[lastFilled]?.focus();
+  }
+
+  // ── Styles ─────────────────────────────────────────────────────────────────
   const inputClass =
-    "w-full rounded-md border border-border bg-surface2 px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-accent";
+    "w-full rounded-xl border border-border bg-surface2 px-4 py-3 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30 transition-all";
 
-  if (step === "otp") {
-    const mm = Math.floor(secondsLeft / 60);
-    const ss = String(secondsLeft % 60).padStart(2, "0");
+  const mm = Math.floor(secondsLeft / 60);
+  const ss = String(secondsLeft % 60).padStart(2, "0");
 
+  // ─── Step: Role selection ──────────────────────────────────────────────────
+  if (step === "role") {
     return (
-      <form onSubmit={handleOtpSubmit} className="space-y-5">
+      <div className="space-y-6">
+        <Toaster position="top-center" />
         <div>
+          <h2 className="text-xl font-bold text-ink mb-1">Choose your role</h2>
+          <p className="text-sm text-muted">Select how you want to join the platform</p>
+        </div>
+        <div className="space-y-3">
+          {(Object.entries(roleInfo) as [Role, typeof roleInfo.intern][]).map(([key, info]) => (
+            <motion.button
+              key={key}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => { setRole(key); setStep("form"); }}
+              className={`w-full text-left rounded-xl border-2 px-5 py-4 transition-all ${info.color}`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{info.icon}</span>
+                <div>
+                  <p className="font-semibold text-ink">{info.label}</p>
+                  <p className="text-xs text-muted mt-0.5">{info.desc}</p>
+                </div>
+                <svg className="ml-auto w-4 h-4 text-muted" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </motion.button>
+          ))}
+        </div>
+        <p className="text-center text-sm text-muted">
+          Already have an account?{" "}
+          <Link href="/login" className="text-accent hover:underline font-medium">Sign In</Link>
+        </p>
+      </div>
+    );
+  }
+
+  // ─── Step: OTP verification ────────────────────────────────────────────────
+  if (step === "otp") {
+    return (
+      <form onSubmit={handleOtpSubmit} className="space-y-6">
+        <Toaster position="top-center" />
+        <button
+          type="button"
+          onClick={() => { setStep("form"); setOtp(["", "", "", "", "", ""]); setError(""); }}
+          className="flex items-center gap-1.5 text-muted hover:text-ink text-sm transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+
+        <div>
+          <h2 className="text-xl font-bold text-ink mb-1">Check your inbox</h2>
           <p className="text-sm text-muted">
-            Verification code sent to <span className="text-ink font-medium">{form.email}</span>
+            A 6-digit code was sent to{" "}
+            <span className="text-ink font-medium">{form.email}</span>
           </p>
-          <p className="mt-1 font-mono text-xs text-muted">
-            Valid for{" "}
-            <span className={secondsLeft > 0 ? "text-accent" : "text-danger"}>
+          <p className="mt-1 text-xs font-mono">
+            Code expires in{" "}
+            <span className={secondsLeft > 0 ? "text-accent" : "text-red-400"}>
               {mm}:{ss}
             </span>
           </p>
         </div>
 
         {debugCode && (
-          <div className="rounded-md border border-accent2/40 bg-surface2 p-3">
-            <p className="text-xs text-accent2">
-              Development mode — Code:{" "}
-              <span className="font-mono text-sm text-ink">{debugCode}</span>
+          <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3">
+            <p className="text-xs text-yellow-300">
+              Dev mode — Code: <span className="font-mono font-bold tracking-widest">{debugCode}</span>
             </p>
           </div>
         )}
 
-        <div>
-          <label className="mb-1 block text-xs text-muted">Verification Code</label>
-          <input
-            required
-            inputMode="numeric"
-            maxLength={6}
-            className={`${inputClass} tracking-[0.5em] text-center font-mono`}
-            placeholder="------"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-          />
+        <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
+          {otp.map((digit, idx) => (
+            <input
+              key={idx}
+              ref={(el) => { inputRefs.current[idx] = el; }}
+              type="text"
+              inputMode="numeric"
+              maxLength={1}
+              value={digit}
+              onChange={(e) => handleOtpChange(idx, e.target.value)}
+              onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+              className="w-12 h-14 text-center text-2xl font-bold bg-surface2 border border-border text-ink rounded-xl outline-none focus:border-accent focus:ring-2 focus:ring-accent/30 transition-all"
+            />
+          ))}
         </div>
 
-        {error && <p className="text-sm text-danger">{error}</p>}
+        {error && (
+          <div className="rounded-xl border border-accent/30 bg-accent/10 px-4 py-3">
+            <p className="text-sm text-accent">{error}</p>
+            {(error.includes("already registered") || error.includes("already registered")) && (
+              <Link href="/login" className="mt-1 text-xs text-accent underline block">Sign In instead →</Link>
+            )}
+          </div>
+        )}
 
-        <button
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           type="submit"
-          disabled={status === "loading" || otp.length !== 6 || secondsLeft === 0}
-          className="w-full rounded-md bg-accent py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          disabled={status === "loading" || otp.join("").length < 6 || secondsLeft === 0}
+          className="w-full rounded-xl bg-accent py-3 text-sm font-semibold text-white transition-all hover:bg-red-600 shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {status === "loading" ? "Verifying..." : "Confirm & Complete"}
-        </button>
+          {status === "loading" ? (
+            <>
+              <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Creating account…
+            </>
+          ) : "Verify & Complete Registration"}
+        </motion.button>
 
-        <div className="flex items-center justify-between text-xs">
+        <div className="text-center">
           <button
             type="button"
-            onClick={() => setStep("form")}
-            className="text-muted hover:text-ink"
-          >
-            Back to edit info
-          </button>
-          <button
-            type="button"
-            onClick={requestCode}
+            onClick={requestOtp}
             disabled={secondsLeft > 0 || status === "loading"}
-            className="text-accent disabled:cursor-not-allowed disabled:text-muted"
+            className="text-sm text-muted hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Resend Code
+            {secondsLeft > 0 ? `Resend in ${secondsLeft}s` : "Resend Code"}
           </button>
         </div>
       </form>
     );
   }
 
-  const submitButtonText = form.role === "Intern" ? "Register as Intern" : (form.role === "Consultation" ? "Book Consultation" : "Register Admin");
+  // ─── Step: Success ─────────────────────────────────────────────────────────
+  if (step === "success") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center space-y-4 py-8"
+      >
+        <div className="w-16 h-16 rounded-full bg-green-500/20 border border-green-500/50 flex items-center justify-center mx-auto">
+          <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 className="text-xl font-bold text-ink">Welcome, {form.name}! 🎉</h2>
+        <p className="text-muted text-sm">Your account has been created. Redirecting to your dashboard…</p>
+        <div className="h-1 w-full bg-surface2 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-accent rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: "100%" }}
+            transition={{ duration: 1.4 }}
+          />
+        </div>
+      </motion.div>
+    );
+  }
+
+  // ─── Step: Form ────────────────────────────────────────────────────────────
+  const selectedMentor = mentors.find((m) => m.id === form.mentorId);
 
   return (
     <form onSubmit={handleFormSubmit} className="space-y-5">
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="md:col-span-2">
-          <label className="mb-1 block text-xs text-muted">Role</label>
-          <select
-            className={inputClass}
-            value={form.role}
-            onChange={(e) => update("role", e.target.value)}
-          >
-            <option value="Intern">Intern</option>
-            <option value="Consultation">Consultation</option>
-            <option value="Admin">Admin</option>
-          </select>
-        </div>
-
-        {form.role === "Intern" && (
-          <>
-            <div>
-              <label className="mb-1 block text-xs text-muted">Select Mentor</label>
-              <select
-                className={inputClass}
-                value={form.mentor}
-                onChange={(e) => update("mentor", e.target.value)}
-              >
-                {mentors.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted">Assigned Track</label>
-              <input
-                disabled
-                className={`${inputClass} opacity-70 cursor-not-allowed bg-surface`}
-                value={form.track.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}
-              />
-            </div>
-          </>
-        )}
-
-        {form.role === "Consultation" && (
-          <div className="md:col-span-2">
-            <label className="mb-1 block text-xs text-muted">Topic of Consultation</label>
-            <input
-              className={inputClass}
-              placeholder="e.g., Career Advice, Code Review..."
-              onChange={(e) => update("github", e.target.value)}
-            />
-          </div>
-        )}
-
+      <Toaster position="top-center" />
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => { setStep("role"); setRole(null); setError(""); }}
+          className="text-muted hover:text-ink transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
         <div>
-          <label className="mb-1 block text-xs text-muted">Full Name</label>
+          <h2 className="text-base font-bold text-ink">
+            {roleInfo[role!].icon} Register as {roleInfo[role!].label}
+          </h2>
+        </div>
+      </div>
+
+      {/* ── Shared fields ── */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Full Name *</label>
           <input
             required
             className={inputClass}
+            placeholder="Your full name"
             value={form.name}
             onChange={(e) => update("name", e.target.value)}
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-muted">Email Address</label>
+          <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Email Address *</label>
           <input
             required
             type="email"
             className={inputClass}
+            placeholder="you@example.com"
             value={form.email}
             onChange={(e) => update("email", e.target.value)}
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs text-muted">Phone Number (Egyptian)</label>
+          <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Phone Number *</label>
           <input
             required
             className={inputClass}
@@ -309,32 +550,60 @@ export default function RegisterForm() {
             value={form.phone}
             onChange={(e) => update("phone", e.target.value)}
           />
+          <p className="text-[11px] text-muted mt-1">Egyptian number (01x) required</p>
         </div>
-        
-        {form.role === "Intern" && (
-          <>
+      </div>
+
+      {/* ── Intern-specific fields ── */}
+      {role === "intern" && (
+        <div className="space-y-4">
+          <div className="h-px bg-border" />
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs text-muted">University</label>
-              <input
+              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Select Mentor *</label>
+              <select
                 className={inputClass}
-                value={form.university}
-                onChange={(e) => update("university", e.target.value)}
+                value={form.mentorId}
+                onChange={(e) => update("mentorId", e.target.value)}
+              >
+                {mentors.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} — {m.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Assigned Track</label>
+              <input
+                disabled
+                className={`${inputClass} opacity-60 cursor-not-allowed`}
+                value={selectedMentor ? tracks.find(t => t.slug === form.trackSlug)?.name ?? form.trackSlug : ""}
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted">Current Level</label>
+              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Current Level *</label>
               <select
                 className={inputClass}
                 value={form.level}
                 onChange={(e) => update("level", e.target.value)}
               >
-                <option value="Beginner">Beginner</option>
-                <option value="Have Basics">I know the basics</option>
-                <option value="Did Projects">Built projects before</option>
+                {levels.map((l) => (
+                  <option key={l} value={l}>{l}</option>
+                ))}
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted">GitHub Profile (Optional)</label>
+              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">University</label>
+              <input
+                className={inputClass}
+                placeholder="Your university (optional)"
+                value={form.university}
+                onChange={(e) => update("university", e.target.value)}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">GitHub Profile (Optional)</label>
               <input
                 className={inputClass}
                 placeholder="github.com/username"
@@ -342,19 +611,158 @@ export default function RegisterForm() {
                 onChange={(e) => update("github", e.target.value)}
               />
             </div>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
 
-      {error && <p className="text-sm text-accent font-medium bg-accent/10 p-3 rounded-md border border-accent/20">{error}</p>}
+      {/* ── Mentor-specific fields ── */}
+      {role === "mentor" && (
+        <div className="space-y-4">
+          <div className="h-px bg-border" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Professional Title *</label>
+              <input
+                required
+                className={inputClass}
+                placeholder="e.g., Senior DevOps Engineer"
+                value={form.title}
+                onChange={(e) => update("title", e.target.value)}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Bio</label>
+              <textarea
+                rows={3}
+                className={`${inputClass} resize-none`}
+                placeholder="Tell us about your experience and what you can teach..."
+                value={form.bio}
+                onChange={(e) => update("bio", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Skills (comma-separated)</label>
+              <input
+                className={inputClass}
+                placeholder="Kubernetes, Docker, Terraform..."
+                value={form.skills}
+                onChange={(e) => update("skills", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Years of Experience</label>
+              <input
+                type="number"
+                min="0"
+                max="50"
+                className={inputClass}
+                placeholder="e.g., 5"
+                value={form.yearsExperience}
+                onChange={(e) => update("yearsExperience", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Session Price (EGP)</label>
+              <input
+                type="number"
+                min="0"
+                className={inputClass}
+                placeholder="e.g., 250"
+                value={form.consultationPrice}
+                onChange={(e) => update("consultationPrice", e.target.value)}
+              />
+            </div>
+          </div>
 
-      <button
+          {/* Track selection */}
+          <div>
+            <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-2">Tracks You Teach</label>
+            <div className="grid grid-cols-2 gap-2">
+              {tracks.map((t) => (
+                <button
+                  key={t.slug}
+                  type="button"
+                  onClick={() => toggleMentorTrack(t.slug)}
+                  className={`text-left px-3 py-2 rounded-lg text-xs border transition-all ${
+                    form.mentorTracks.includes(t.slug)
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-border text-muted hover:border-accent/50"
+                  }`}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Level selection */}
+          <div>
+            <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-2">Levels You Mentor</label>
+            <div className="flex flex-wrap gap-2">
+              {levels.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => toggleMentorLevel(l)}
+                  className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${
+                    form.mentorLevels.includes(l)
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-border text-muted hover:border-accent/50"
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Consultation-specific fields ── */}
+      {role === "consultation" && (
+        <div className="space-y-4">
+          <div className="h-px bg-border" />
+          <div>
+            <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">What do you need help with?</label>
+            <textarea
+              rows={3}
+              className={`${inputClass} resize-none`}
+              placeholder="e.g., Career guidance, code review, system design, debugging..."
+              value={form.topic}
+              onChange={(e) => update("topic", e.target.value)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Error ── */}
+      {error && (
+        <div className="rounded-xl border border-accent/30 bg-accent/10 px-4 py-3">
+          <p className="text-sm text-accent">{error}</p>
+          {(error.includes("already registered")) && (
+            <Link href="/login" className="mt-1 text-xs text-accent underline block">
+              Sign in instead →
+            </Link>
+          )}
+        </div>
+      )}
+
+      <motion.button
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
         type="submit"
         disabled={status === "loading"}
-        className="w-full rounded-md bg-accent py-3 text-sm font-semibold text-white transition-all hover:bg-accent2 hover:shadow-[0_0_15px_rgba(230,0,0,0.5)] disabled:opacity-50"
+        className="w-full rounded-xl bg-accent py-3 text-sm font-semibold text-white transition-all hover:bg-red-600 shadow-lg shadow-accent/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {status === "loading" ? "Sending OTP..." : submitButtonText}
-      </button>
+        {status === "loading" ? (
+          <>
+            <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            Sending Code…
+          </>
+        ) : (
+          `Continue as ${roleInfo[role!].label} →`
+        )}
+      </motion.button>
     </form>
   );
 }

@@ -1,29 +1,46 @@
 import { NextResponse } from "next/server";
 import { verifyTicket } from "@/lib/otp";
 
-// هذا الـ route شكل مبدئي فقط: بيتحقق من البيانات ويرجع نجاح، من غير تخزين فعلي.
-// لما تضيف قاعدة بيانات حقيقية (زي Vercel Postgres أو Supabase)، هنا هو المكان
-// اللي هتحط فيه كود الحفظ (insert) بدل الـ TODO تحت.
 export async function POST(req: Request) {
   const body = await req.json();
-  const required = ["name", "email", "track"];
-  const missing = required.filter((f) => !body[f]);
 
-  if (missing.length > 0) {
+  // Validate role
+  const validRoles = ["intern", "mentor", "consultation"];
+  if (!body.role || !validRoles.includes(body.role)) {
     return NextResponse.json(
-      { ok: false, error: `الحقول دي ناقصة: ${missing.join(", ")}` },
+      { ok: false, error: "Invalid role. Must be intern, mentor, or consultation." },
       { status: 400 }
     );
   }
 
+  // Required fields per role
+  const baseRequired = ["name", "email", "phone", "role"];
+  const roleRequired: Record<string, string[]> = {
+    intern: [...baseRequired, "trackSlug", "level"],
+    mentor: [...baseRequired, "title"],
+    consultation: [...baseRequired],
+  };
+
+  const required = roleRequired[body.role] || baseRequired;
+  const missing = required.filter((f) => !body[f]);
+
+  if (missing.length > 0) {
+    return NextResponse.json(
+      { ok: false, error: `Missing required fields: ${missing.join(", ")}` },
+      { status: 400 }
+    );
+  }
+
+  // Verify OTP ticket
   if (!verifyTicket(body.ticket, body.email)) {
     return NextResponse.json(
-      { ok: false, error: "لازم تتحقق من بريدك الإلكتروني بالكود الأول" },
+      { ok: false, error: "OTP verification required. Please verify your email first." },
       { status: 403 }
     );
   }
 
-  // TODO: احفظ body في قاعدة البيانات هنا.
+  // NOTE: Users are saved to localStorage by the client after this API responds OK.
+  // In a production setup, you would save to a database here.
 
   return NextResponse.json({ ok: true });
 }
