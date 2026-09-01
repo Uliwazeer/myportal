@@ -1,6 +1,6 @@
 import RegisterForm from "./RegisterForm";
 
-export const metadata = { title: "Register & Book — PlatformX" };
+export const metadata = { title: "Register & Book — Mentorship Platform" };
 
 export default function RegisterPage() {
   return (

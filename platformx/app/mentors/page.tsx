@@ -139,12 +139,15 @@ export default function MentorsPage() {
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-1.5">
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
                         <span className="text-[10px] font-mono border border-border text-muted rounded px-1.5 py-0.5">
                           {m.level}
                         </span>
+                        <span className="text-[10px] font-mono bg-accent/10 text-accent border border-accent/30 rounded px-1.5 py-0.5 font-semibold">
+                          {m.completedConsultations} Consultations Completed
+                        </span>
                         <span className="text-[10px] text-muted">
-                          {m.yearsExperience}+ yrs exp
+                          {m.yearsExperience}+ yrs exp &middot; {m.responseRate}% response
                         </span>
                       </div>
                     </div>
@@ -154,6 +157,22 @@ export default function MentorsPage() {
                   <p className="text-sm text-muted leading-relaxed line-clamp-2">
                     {m.bio}
                   </p>
+
+                  {/* Featured Review & Comment */}
+                  {m.featuredReview && (
+                    <div className="bg-surface2/80 border border-border/80 rounded-xl p-3 text-xs space-y-1">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-ink font-semibold flex items-center gap-1">
+                          <span className="text-yellow-400">{"★".repeat(m.featuredReview.rating)}</span>
+                          {m.featuredReview.userName}
+                        </span>
+                        <span className="text-green-400 font-mono text-[10px] flex items-center gap-0.5">
+                          ✓ Verified
+                        </span>
+                      </div>
+                      <p className="text-muted italic">&ldquo;{m.featuredReview.comment}&rdquo;</p>
+                    </div>
+                  )}
 
                   {/* Skills */}
                   <div className="flex flex-wrap gap-1.5">

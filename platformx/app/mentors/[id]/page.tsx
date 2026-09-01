@@ -77,6 +77,28 @@ export default function MentorProfilePage() {
               <Link href={"/book?mentor=" + mentor.id} className="mt-5 w-full bg-accent text-white rounded-xl py-2.5 text-sm font-semibold hover:opacity-90 block text-center shadow-lg shadow-accent/20">Book a Session</Link>
             </motion.div>
 
+            <div className="bg-surface rounded-2xl border border-border p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-ink">Mentor Reliability &amp; Stats</h3>
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="bg-surface2 p-2.5 rounded-xl border border-border">
+                  <p className="text-lg font-bold font-mono text-accent">{mentor.completedConsultations}</p>
+                  <p className="text-[10px] text-muted">Completed Consultations</p>
+                </div>
+                <div className="bg-surface2 p-2.5 rounded-xl border border-border">
+                  <p className="text-lg font-bold font-mono text-green-400">{mentor.responseRate}%</p>
+                  <p className="text-[10px] text-muted">Response Rate</p>
+                </div>
+                <div className="bg-surface2 p-2.5 rounded-xl border border-border">
+                  <p className="text-lg font-bold font-mono text-blue-400">{mentor.attendanceRate}%</p>
+                  <p className="text-[10px] text-muted">Attendance Rate</p>
+                </div>
+                <div className="bg-surface2 p-2.5 rounded-xl border border-border">
+                  <p className="text-lg font-bold font-mono text-ink">&lt; 1%</p>
+                  <p className="text-[10px] text-muted">Cancellation Rate</p>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-surface rounded-2xl border border-border p-5">
               <h3 className="text-sm font-semibold text-ink mb-3">Session Pricing</h3>
               <div className="space-y-2">
@@ -180,19 +202,39 @@ export default function MentorProfilePage() {
                 </div>
               )}
 
-              {reviews.length === 0 ? (
+              {reviews.length === 0 && !mentor.featuredReview ? (
                 <p className="text-muted text-sm text-center py-8">No reviews yet.</p>
               ) : (
                 <div className="space-y-4">
+                  {mentor.featuredReview && reviews.length === 0 && (
+                    <div className="border-b border-border pb-4 last:border-0 last:pb-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-yellow-400 text-sm">{"★".repeat(mentor.featuredReview.rating)}</span>
+                            <span className="text-sm font-medium text-ink">{mentor.featuredReview.userName}</span>
+                            <span className="text-[10px] text-green-400 bg-green-950/40 border border-green-800 rounded px-1.5 py-0.2">
+                              ✓ Verified Consultation
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted leading-relaxed">&ldquo;{mentor.featuredReview.comment}&rdquo;</p>
+                        </div>
+                        <span className="text-xs text-muted shrink-0">Recent</span>
+                      </div>
+                    </div>
+                  )}
                   {reviews.map(r => (
                     <div key={r.id} className="border-b border-border pb-4 last:border-0 last:pb-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-yellow-400 text-sm">{"&#9733;".repeat(r.rating)}</span>
+                            <span className="text-yellow-400 text-sm">{"★".repeat(r.rating)}</span>
                             <span className="text-sm font-medium text-ink">{r.userName}</span>
+                            <span className="text-[10px] text-green-400 bg-green-950/40 border border-green-800 rounded px-1.5 py-0.2">
+                              ✓ Verified Consultation
+                            </span>
                           </div>
-                          <p className="text-sm text-muted">{r.comment}</p>
+                          <p className="text-sm text-muted leading-relaxed">{r.comment}</p>
                         </div>
                         <span className="text-xs text-muted shrink-0">{new Date(r.createdAt).toLocaleDateString()}</span>
                       </div>

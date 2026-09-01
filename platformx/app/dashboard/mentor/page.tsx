@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { getSession, clearSession, getBookingsByMentor, getReviewsByMentor, getUnreadCount, markNotificationsRead, getNotifications, confirmBookingByMentor, declineBookingByMentor } from "@/lib/store";
+import { getSession, clearSession, getBookingsByMentor, getReviewsByMentor, getUnreadCount, markNotificationsRead, getNotifications, confirmBookingByMentor, declineBookingByMentor, getUsers } from "@/lib/store";
 import { tracks } from "@/lib/data";
 import type { UserProfile, Booking, Review, Notification } from "@/lib/data";
 
@@ -172,6 +172,7 @@ export default function MentorDashboard() {
                 <div className="space-y-3">
                   {bookings.map(b => {
                     const t = tracks.find(tr => tr.slug === b.trackSlug);
+                    const student = getUsers().find(u => u.id === b.userId);
                     return (
                       <div key={b.id} className="bg-surface rounded-xl border border-border p-5">
                         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -182,7 +183,11 @@ export default function MentorDashboard() {
                               </span>
                               <h4 className="font-semibold text-ink">{t?.name || b.trackSlug}</h4>
                             </div>
-                            <p className="text-sm text-muted">{b.date} · {b.time} · {b.duration} min</p>
+                            <p className="text-sm text-ink font-medium">
+                              Client: {student ? `${student.name} (${student.role === "intern" ? "Intern" : "Consultation"})` : "Student / Intern"}
+                              {student?.email && <span className="text-muted text-xs ml-2 font-mono">&lt;{student.email}&gt;</span>}
+                            </p>
+                            <p className="text-xs text-muted mt-0.5">{b.date} · {b.time} · {b.duration} min</p>
                             {b.topic && <p className="text-xs text-muted mt-1">Topic: {b.topic}</p>}
                           </div>
                           <div className="flex items-center gap-2">

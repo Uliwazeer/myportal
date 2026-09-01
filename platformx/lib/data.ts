@@ -99,9 +99,17 @@ export type MentorData = {
   consultationPrice: number; // in EGP
   rating: number;
   reviewCount: number;
+  completedConsultations: number;
+  responseRate: number; // percentage
+  attendanceRate: number; // percentage
   availability: AvailabilitySlot[];
   initials: string;
   color: string; // tailwind accent color class for avatar bg
+  featuredReview?: {
+    userName: string;
+    comment: string;
+    rating: number;
+  };
 };
 
 export const mentors: MentorData[] = [
@@ -127,6 +135,9 @@ export const mentors: MentorData[] = [
     consultationPrice: 300,
     rating: 4.9,
     reviewCount: 87,
+    completedConsultations: 142,
+    responseRate: 99,
+    attendanceRate: 100,
     availability: [
       { day: "Monday", startTime: "18:00", endTime: "22:00" },
       { day: "Wednesday", startTime: "18:00", endTime: "22:00" },
@@ -134,6 +145,11 @@ export const mentors: MentorData[] = [
     ],
     initials: "AW",
     color: "bg-red-600",
+    featuredReview: {
+      userName: "Ahmed M. (Intern)",
+      comment: "Super in-depth Kubernetes session. Solved our production ingress issue in 40 minutes!",
+      rating: 5,
+    },
   },
   {
     id: "adnan",
@@ -157,6 +173,9 @@ export const mentors: MentorData[] = [
     consultationPrice: 250,
     rating: 4.8,
     reviewCount: 64,
+    completedConsultations: 98,
+    responseRate: 97,
+    attendanceRate: 99,
     availability: [
       { day: "Tuesday", startTime: "19:00", endTime: "23:00" },
       { day: "Thursday", startTime: "19:00", endTime: "23:00" },
@@ -164,6 +183,11 @@ export const mentors: MentorData[] = [
     ],
     initials: "AD",
     color: "bg-orange-600",
+    featuredReview: {
+      userName: "Mohamed S. (Consultation)",
+      comment: "Adnan helped architect our microservices communication with Redis and Kafka seamlessly.",
+      rating: 5,
+    },
   },
   {
     id: "yamen",
@@ -187,6 +211,9 @@ export const mentors: MentorData[] = [
     consultationPrice: 280,
     rating: 4.9,
     reviewCount: 52,
+    completedConsultations: 85,
+    responseRate: 98,
+    attendanceRate: 100,
     availability: [
       { day: "Monday", startTime: "20:00", endTime: "23:00" },
       { day: "Wednesday", startTime: "20:00", endTime: "23:00" },
@@ -194,6 +221,11 @@ export const mentors: MentorData[] = [
     ],
     initials: "YM",
     color: "bg-blue-600",
+    featuredReview: {
+      userName: "Omar K. (Intern)",
+      comment: "Outstanding mentor. Taught me realistic web vulnerability testing and reporting.",
+      rating: 5,
+    },
   },
   {
     id: "sajid",
@@ -217,12 +249,20 @@ export const mentors: MentorData[] = [
     consultationPrice: 200,
     rating: 4.7,
     reviewCount: 41,
+    completedConsultations: 63,
+    responseRate: 96,
+    attendanceRate: 98,
     availability: [
       { day: "Sunday", startTime: "14:00", endTime: "20:00" },
       { day: "Thursday", startTime: "18:00", endTime: "22:00" },
     ],
     initials: "SJ",
     color: "bg-green-600",
+    featuredReview: {
+      userName: "Karim T. (Consultation)",
+      comment: "Extremely knowledgeable in Linux performance troubleshooting and server clustering.",
+      rating: 5,
+    },
   },
 ];
 

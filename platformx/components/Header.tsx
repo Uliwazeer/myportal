@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -57,7 +57,7 @@ export default function Header() {
         <Link href="/" className="flex items-center gap-2 group shrink-0">
           <span className="h-2 w-2 rounded-full bg-accent animate-pulse group-hover:scale-150 transition-transform" />
           <span className="font-mono text-base md:text-lg font-bold tracking-tight text-ink group-hover:text-accent transition-colors">
-            MentorSite
+            Mentorship Platform
           </span>
         </Link>
 

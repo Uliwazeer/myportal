@@ -180,6 +180,14 @@ export default function ConsultationDashboard() {
                             <span className="text-xs text-muted">({m.reviewCount})</span>
                           </div>
                         </div>
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                          <span className="text-[10px] font-mono bg-accent/10 text-accent border border-accent/30 rounded px-1.5 py-0.5 font-semibold">
+                            {m.completedConsultations} Consultations
+                          </span>
+                          <span className="text-[10px] text-muted">
+                            {m.yearsExperience}+ yrs exp &middot; {m.responseRate}% response
+                          </span>
+                        </div>
                         <div className="flex flex-wrap gap-1 mt-2">
                           {m.skills.slice(0, 4).map(s => (
                             <span key={s} className="text-[10px] bg-surface2 border border-border text-muted rounded px-1.5 py-0.5">{s}</span>
