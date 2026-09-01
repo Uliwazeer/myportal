@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { getSession, clearSession, getBookingsByUser, getUnreadCount, markNotificationsRead, getNotifications, cancelBookingByIntern } from "@/lib/store";
-import { mentors, tracks } from "@/lib/data";
-import type { UserProfile, Booking, Notification } from "@/lib/data";
+import { getSession, clearSession, getBookingsByUser, getUnreadCount, markNotificationsRead, getNotifications, cancelBookingByIntern, getAllMentors } from "@/lib/store";
+import { mentors as staticMentors, tracks } from "@/lib/data";
+import type { UserProfile, Booking, Notification, MentorData } from "@/lib/data";
 
 const navItems = [
   { label: "Overview", id: "overview" },
@@ -19,6 +19,7 @@ export default function ConsultationDashboard() {
   const router = useRouter();
   const [session, setSession] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [mentors, setMentors] = useState<MentorData[]>(staticMentors);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [unread, setUnread] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -28,6 +29,7 @@ export default function ConsultationDashboard() {
     if (!s) { router.replace("/login"); return; }
     if (s.role !== "consultation") { router.replace(`/dashboard/${s.role}`); return; }
     setSession(s);
+    setMentors(getAllMentors());
     setBookings(getBookingsByUser(s.id));
     setUnread(getUnreadCount(s.id));
     setNotifications(getNotifications(s.id));

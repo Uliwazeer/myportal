@@ -4,13 +4,15 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { mentors, tracks } from "@/lib/data";
-import { getReviewsByMentor, getSession, saveReview } from "@/lib/store";
-import type { Review, UserProfile } from "@/lib/data";
+import { tracks } from "@/lib/data";
+import { getReviewsByMentor, getSession, saveReview, getMentorById } from "@/lib/store";
+import type { Review, UserProfile, MentorData } from "@/lib/data";
 
 export default function MentorProfilePage() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
+  const [mentor, setMentor] = useState<MentorData | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [session, setSession] = useState<UserProfile | null>(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -19,13 +21,23 @@ export default function MentorProfilePage() {
   const [submitting, setSubmitting] = useState(false);
   const [hoverRating, setHoverRating] = useState(0);
 
-  const mentor = mentors.find(m => m.id === id);
-
   useEffect(() => {
-    if (!mentor) return;
-    setReviews(getReviewsByMentor(mentor.id));
+    const found = getMentorById(id);
+    setMentor(found);
+    if (found) {
+      setReviews(getReviewsByMentor(found.id));
+    }
     setSession(getSession());
-  }, [mentor]);
+    setLoading(false);
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="h-6 w-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   if (!mentor) return (
     <div className="min-h-screen bg-bg flex items-center justify-center">

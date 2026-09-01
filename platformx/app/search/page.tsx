@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { tracks, mentors, labs } from "@/lib/data";
+import { getAllMentors } from "@/lib/store";
 
 type ResultType = "Track" | "Mentor" | "Lab";
 type Result = { type: ResultType; label: string; sub: string; href: string };
@@ -12,6 +13,11 @@ type Result = { type: ResultType; label: string; sub: string; href: string };
 function SearchContent() {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") || "");
+  const [mentorsList, setMentorsList] = useState(mentors);
+
+  useEffect(() => {
+    setMentorsList(getAllMentors());
+  }, []);
 
   const q = query.toLowerCase().trim();
 
@@ -29,7 +35,7 @@ function SearchContent() {
             sub: t.tagline,
             href: `/tracks/${t.slug}`,
           })),
-        ...mentors
+        ...mentorsList
           .filter(
             (m) =>
               m.name.toLowerCase().includes(q) ||

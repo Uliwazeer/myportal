@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { tracks, mentors, levels } from "@/lib/data";
-import { getSession, saveBooking, addNotification } from "@/lib/store";
+import { getSession, saveBooking, addNotification, getAllMentors } from "@/lib/store";
 import type { Level } from "@/lib/data";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -42,10 +42,13 @@ function BookContent() {
   const [session, setSession] = useState<ReturnType<typeof getSession>>(null);
   const [booked, setBooked] = useState(false);
 
+  const [allMentors, setAllMentors] = useState(mentors);
+
   useEffect(() => {
     const s = getSession();
     if (!s) { router.push("/login"); return; }
     setSession(s);
+    setAllMentors(getAllMentors());
     if (s.trackSlug) setSelectedTrack(s.trackSlug);
     if (s.mentorId) setSelectedMentor(s.mentorId);
     const mentorParam = searchParams.get("mentor");
@@ -53,10 +56,10 @@ function BookContent() {
   }, [router, searchParams]);
 
   const filteredMentors = selectedTrack
-    ? mentors.filter((m) => m.tracks.includes(selectedTrack))
-    : mentors;
+    ? allMentors.filter((m) => m.tracks.includes(selectedTrack))
+    : allMentors;
 
-  const mentor = mentors.find((m) => m.id === selectedMentor);
+  const mentor = allMentors.find((m) => m.id === selectedMentor);
   const track = tracks.find((t) => t.slug === selectedTrack);
   const dates = getAvailableDates();
 

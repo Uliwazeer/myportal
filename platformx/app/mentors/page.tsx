@@ -1,16 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { mentors, tracks, levels } from "@/lib/data";
+import { mentors as staticMentors, tracks, levels } from "@/lib/data";
+import { getAllMentors } from "@/lib/store";
+import type { MentorData } from "@/lib/data";
 
 export default function MentorsPage() {
+  const [mentorList, setMentorList] = useState<MentorData[]>(staticMentors);
   const [search, setSearch] = useState("");
   const [filterTrack, setFilterTrack] = useState("all");
   const [filterLevel, setFilterLevel] = useState("all");
 
-  const filtered = mentors.filter((m) => {
+  useEffect(() => {
+    setMentorList(getAllMentors());
+  }, []);
+
+  const filtered = mentorList.filter((m) => {
     const q = search.toLowerCase();
     const matchesSearch =
       !q ||
