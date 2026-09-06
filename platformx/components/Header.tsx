@@ -129,7 +129,7 @@ export default function Header() {
         </nav>
 
         {/* Right actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {/* Mobile search toggle */}
           <button
             onClick={() => setSearchOpen(!searchOpen)}
@@ -167,20 +167,20 @@ export default function Header() {
               </span>
             </Link>
           ) : (
-            <>
+            <div className="hidden md:flex items-center gap-5 ml-2">
               <Link
                 href="/login"
-                className="hidden md:block text-sm text-muted hover:text-ink transition-colors"
+                className="text-sm font-medium text-muted hover:text-ink transition-colors px-1 py-1"
               >
                 Sign In
               </Link>
               <Link
                 href="/register"
-                className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 shadow-[0_0_10px_rgba(230,0,0,0.3)] hidden md:block"
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-all hover:opacity-90 shadow-[0_0_12px_rgba(230,0,0,0.3)] hover:shadow-[0_0_18px_rgba(230,0,0,0.5)]"
               >
                 Get Started
               </Link>
-            </>
+            </div>
           )}
 
           {/* Hamburger */}
