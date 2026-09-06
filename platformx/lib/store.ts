@@ -174,6 +174,69 @@ const DEFAULT_SEED_USERS: UserProfile[] = [
     topic: "Linux Systems Patching & Ansible Automation",
     createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
   },
+  {
+    id: "ali-wazeer",
+    name: "Ali Wazeer",
+    email: "ali.wazeer@example.com",
+    phone: "+201000000001",
+    role: "mentor",
+    title: "Senior Platform Engineer",
+    createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+  },
+  {
+    id: "charles",
+    name: "Charles",
+    email: "charles@example.com",
+    phone: "+201000000002",
+    role: "mentor",
+    title: "Senior Backend Engineer",
+    createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+  },
+  {
+    id: "xilie",
+    name: "XiLie",
+    email: "xilie@example.com",
+    phone: "+201000000003",
+    role: "mentor",
+    title: "Cyber Security Specialist",
+    createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+  },
+  {
+    id: "sajid",
+    name: "Sajid",
+    email: "sajid@example.com",
+    phone: "+201000000004",
+    role: "mentor",
+    title: "DevOps Engineer",
+    createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+  },
+  {
+    id: "waleed-gharieb",
+    name: "Waleed Gharieb",
+    email: "waleed.gharieb@example.com",
+    phone: "+201000000005",
+    role: "mentor",
+    title: "Senior Infrastructure Engineer",
+    createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+  },
+  {
+    id: "ahmed-moustafa",
+    name: "Ahmed Moustafa",
+    email: "ahmed.moustafa@example.com",
+    phone: "+201000000006",
+    role: "mentor",
+    title: "Manager - Infrastructure & Platform",
+    createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+  },
+  {
+    id: "ahmed-gamal",
+    name: "Ahmed Gamal",
+    email: "ahmed.gamal@example.com",
+    phone: "+201000000007",
+    role: "mentor",
+    title: "Senior System Engineer",
+    createdAt: new Date(Date.now() - 60 * 86400000).toISOString(),
+  },
 ];
 
 const DEFAULT_SEED_BOOKINGS: Booking[] = [
@@ -292,6 +355,97 @@ const DEFAULT_SEED_BOOKINGS: Booking[] = [
     duration: 60,
     topic: "GraphQL Subscriptions & Event-Driven Architecture",
     status: "confirmed",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "MP-2026-551029",
+    userId: "intern-3",
+    mentorId: "ali-wazeer",
+    trackSlug: "platform-engineer",
+    sessionType: "Consultation",
+    date: "2026-09-15",
+    time: "20:00",
+    duration: 60,
+    topic: "Production Kubernetes Ingress, TLS Cert-Manager & eBPF Cilium Setup",
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "MP-2026-551030",
+    userId: "client-1",
+    mentorId: "ali-wazeer",
+    trackSlug: "platform-engineer",
+    sessionType: "Consultation",
+    date: "2026-09-16",
+    time: "18:00",
+    duration: 40,
+    topic: "Terraform State Locking & S3 Backend Multi-Account Architecture",
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "MP-2026-551031",
+    userId: "client-2",
+    mentorId: "charles",
+    trackSlug: "backend-engineer",
+    sessionType: "Consultation",
+    date: "2026-09-16",
+    time: "19:00",
+    duration: 60,
+    topic: "Redis Cluster Sharding & PostgreSQL Connection Pool Tuning",
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "MP-2026-551032",
+    userId: "client-3",
+    mentorId: "xilie",
+    trackSlug: "cyber-security",
+    sessionType: "Consultation",
+    date: "2026-09-17",
+    time: "21:00",
+    duration: 40,
+    topic: "Zero-Trust Architecture & AWS IAM Least-Privilege Policy Hardening",
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "MP-2026-551033",
+    userId: "client-4",
+    mentorId: "waleed-gharieb",
+    trackSlug: "platform-engineer",
+    sessionType: "Consultation",
+    date: "2026-09-18",
+    time: "17:00",
+    duration: 60,
+    topic: "Multi-Region Cloud Networking & Disaster Recovery Architecture",
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "MP-2026-551034",
+    userId: "client-5",
+    mentorId: "ahmed-moustafa",
+    trackSlug: "platform-engineer",
+    sessionType: "Career Guidance",
+    date: "2026-09-18",
+    time: "19:00",
+    duration: 60,
+    topic: "Internal Developer Platform (IDP) Strategy & Backstage Integration",
+    status: "pending",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "MP-2026-551035",
+    userId: "client-6",
+    mentorId: "ahmed-gamal",
+    trackSlug: "devops-engineer",
+    sessionType: "Technical Review",
+    date: "2026-09-19",
+    time: "18:00",
+    duration: 40,
+    topic: "Ansible Automation & High Availability Linux Kernel Tuning",
+    status: "pending",
     createdAt: new Date().toISOString(),
   },
 ];
@@ -641,8 +795,35 @@ export function getBookingsByUser(userId: string): Booking[] {
   return getBookings().filter((b) => b.userId === userId);
 }
 
-export function getBookingsByMentor(mentorId: string): Booking[] {
-  return getBookings().filter((b) => b.mentorId === mentorId);
+export function getBookingsByMentor(mentorIdOrUser: string | UserProfile | undefined | null): Booking[] {
+  if (!mentorIdOrUser) return [];
+  const allBookings = getBookings();
+
+  let mentorId = "";
+  let mentorEmail = "";
+  let mentorName = "";
+
+  if (typeof mentorIdOrUser === "object") {
+    mentorId = mentorIdOrUser.id || "";
+    mentorEmail = (mentorIdOrUser.email || "").toLowerCase().trim();
+    mentorName = (mentorIdOrUser.name || "").toLowerCase().trim();
+  } else {
+    mentorId = mentorIdOrUser.trim();
+    const user = getUserById(mentorId) || getUserByEmail(mentorId);
+    if (user) {
+      mentorEmail = (user.email || "").toLowerCase().trim();
+      mentorName = (user.name || "").toLowerCase().trim();
+    }
+  }
+
+  const slugName = mentorName.replace(/\s+/g, "-");
+
+  return allBookings.filter((b) => {
+    if (mentorId && b.mentorId.toLowerCase() === mentorId.toLowerCase()) return true;
+    if (slugName && b.mentorId.toLowerCase() === slugName) return true;
+    if (mentorEmail && b.mentorId.toLowerCase() === mentorEmail) return true;
+    return false;
+  });
 }
 
 export function checkDoubleBooking(
@@ -881,6 +1062,35 @@ export function declineBookingByMentor(bookingId: string): { success: boolean } 
   });
 
   return { success: true };
+}
+
+export function completeBookingByMentor(bookingId: string): { success: boolean } {
+  const booking = getBookings().find((b) => b.id === bookingId);
+  if (!booking) return { success: false };
+
+  updateBookingStatus(bookingId, "completed");
+
+  const users = getUsers();
+  const mentor = users.find((u) => u.id === booking.mentorId);
+  const intern = users.find((u) => u.id === booking.userId);
+  const mentorName = mentor?.name || "Mentor";
+  const internName = intern?.name || "Student";
+
+  addNotification({
+    userId: booking.userId,
+    message: `🎓 [${booking.id}] Your session with ${mentorName} has been completed! Please leave a review and review your action items.`,
+  });
+
+  addNotification({
+    userId: booking.mentorId,
+    message: `🎉 [${booking.id}] You marked the session with ${internName} as completed. You can now publish session notes and homework.`,
+  });
+
+  return { success: true };
+}
+
+export function cancelBookingByMentor(bookingId: string): { success: boolean } {
+  return declineBookingByMentor(bookingId);
 }
 
 // ─── Reviews ──────────────────────────────────────────────────

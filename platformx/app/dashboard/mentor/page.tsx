@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { getSession, clearSession, getBookingsByMentor, getReviewsByMentor, getUnreadCount, markNotificationsRead, getNotifications, confirmBookingByMentor, declineBookingByMentor, getUsers, syncWithServer, getSessionNotesByMentor, saveSessionNote, toggleHomework } from "@/lib/store";
+import { getSession, clearSession, getBookingsByMentor, getReviewsByMentor, getUnreadCount, markNotificationsRead, getNotifications, confirmBookingByMentor, declineBookingByMentor, completeBookingByMentor, cancelBookingByMentor, getUsers, syncWithServer, getSessionNotesByMentor, saveSessionNote, toggleHomework } from "@/lib/store";
 import { tracks } from "@/lib/data";
 import type { UserProfile, Booking, Review, Notification, SessionNote } from "@/lib/data";
 
@@ -22,10 +22,12 @@ export default function MentorDashboard() {
   const [session, setSession] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookingFilter, setBookingFilter] = useState<"all" | "pending" | "confirmed" | "completed" | "cancelled">("all");
   const [reviews, setReviews] = useState<Review[]>([]);
   const [sessionNotes, setSessionNotes] = useState<SessionNote[]>([]);
   const [unread, setUnread] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   // Note creation form state
   const [showNoteForm, setShowNoteForm] = useState(false);
@@ -41,7 +43,7 @@ export default function MentorDashboard() {
     if (!s) { router.replace("/login"); return; }
     if (s.role !== "mentor") { router.replace(`/dashboard/${s.role}`); return; }
     setSession(s);
-    setBookings(getBookingsByMentor(s.id));
+    setBookings(getBookingsByMentor(s));
     setReviews(getReviewsByMentor(s.id));
     setSessionNotes(getSessionNotesByMentor(s.id));
     setUnread(getUnreadCount(s.id));
@@ -51,7 +53,7 @@ export default function MentorDashboard() {
       const updatedS = getSession();
       if (updatedS) {
         setSession(updatedS);
-        setBookings(getBookingsByMentor(updatedS.id));
+        setBookings(getBookingsByMentor(updatedS));
         setReviews(getReviewsByMentor(updatedS.id));
         setSessionNotes(getSessionNotesByMentor(updatedS.id));
         setUnread(getUnreadCount(updatedS.id));
@@ -61,6 +63,31 @@ export default function MentorDashboard() {
   }, [router]);
 
   function handleLogout() { clearSession(); router.push("/"); }
+
+  function showMessage(msg: string) {
+    setActionMessage(msg);
+    setTimeout(() => setActionMessage(null), 3500);
+  }
+
+  function handleConfirm(bookingId: string) {
+    confirmBookingByMentor(bookingId);
+    if (session) setBookings(getBookingsByMentor(session));
+    showMessage(`✅ Session [${bookingId}] has been successfully confirmed!`);
+  }
+
+  function handleDecline(bookingId: string) {
+    if (confirm("Are you sure you want to decline / cancel this session booking?")) {
+      declineBookingByMentor(bookingId);
+      if (session) setBookings(getBookingsByMentor(session));
+      showMessage(`⚠️ Session [${bookingId}] has been cancelled/declined.`);
+    }
+  }
+
+  function handleComplete(bookingId: string) {
+    completeBookingByMentor(bookingId);
+    if (session) setBookings(getBookingsByMentor(session));
+    showMessage(`🎓 Session [${bookingId}] marked as Completed!`);
+  }
 
   function handleTabClick(id: string) {
     setActiveTab(id);
@@ -75,6 +102,12 @@ export default function MentorDashboard() {
     if (session) {
       setSessionNotes(getSessionNotesByMentor(session.id));
     }
+  }
+
+  function handleOpenNoteEditorForBooking(bookingId: string) {
+    setTargetBookingId(bookingId);
+    setShowNoteForm(true);
+    setActiveTab("notes");
   }
 
   function handleCreateNoteSubmit(e: React.FormEvent) {
@@ -122,7 +155,7 @@ export default function MentorDashboard() {
     setNoteHw2("");
     setNoteAdvice("");
     setNoteNextFocus("");
-    alert("Session notes & action items published to student dashboard!");
+    showMessage("📝 Session notes & action items published to student!");
   }
 
   if (!session) return (
@@ -132,11 +165,30 @@ export default function MentorDashboard() {
   );
 
   const avgRating = reviews.length > 0 ? (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1) : "0.0";
-  const pendingBookings = bookings.filter(b => b.status === "pending" || b.status === "confirmed" || b.status === "upcoming");
+  const pendingBookings = bookings.filter(b => b.status === "pending");
+  const confirmedBookings = bookings.filter(b => b.status === "confirmed" || b.status === "upcoming");
   const completedBookings = bookings.filter(b => b.status === "completed");
+  const cancelledBookings = bookings.filter(b => b.status === "cancelled");
+
+  const filteredBookings = bookings.filter((b) => {
+    if (bookingFilter === "all") return true;
+    if (bookingFilter === "pending") return b.status === "pending";
+    if (bookingFilter === "confirmed") return b.status === "confirmed" || b.status === "upcoming";
+    if (bookingFilter === "completed") return b.status === "completed";
+    if (bookingFilter === "cancelled") return b.status === "cancelled";
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-bg">
+      {/* Action toast message */}
+      {actionMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-surface border border-accent text-ink px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 animate-bounce">
+          <span className="text-sm font-semibold">{actionMessage}</span>
+          <button onClick={() => setActionMessage(null)} className="text-muted hover:text-ink text-xs">✕</button>
+        </div>
+      )}
+
       <div className="flex">
         {/* Sidebar */}
         <aside className="hidden md:flex flex-col w-56 min-h-screen border-r border-border bg-surface sticky top-16 h-[calc(100vh-4rem)]">
@@ -157,7 +209,12 @@ export default function MentorDashboard() {
                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${
                   activeTab === item.id ? "bg-accent text-white" : "text-muted hover:text-ink hover:bg-surface2"
                 }`}>
-                {item.label}
+                <span>{item.label}</span>
+                {item.id === "bookings" && pendingBookings.length > 0 && (
+                  <span className="bg-amber-500 text-black text-[10px] font-bold rounded-full h-4 px-1.5 flex items-center justify-center animate-pulse">
+                    {pendingBookings.length}
+                  </span>
+                )}
                 {item.id === "notifications" && unread > 0 && (
                   <span className="bg-accent text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">{unread}</span>
                 )}
@@ -178,7 +235,9 @@ export default function MentorDashboard() {
                 className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   activeTab === item.id ? "bg-accent text-white" : "bg-surface text-muted border border-border"
                 }`}>
-                {item.label}{item.id === "notifications" && unread > 0 ? ` (${unread})` : ""}
+                {item.label}
+                {item.id === "bookings" && pendingBookings.length > 0 ? ` (${pendingBookings.length})` : ""}
+                {item.id === "notifications" && unread > 0 ? ` (${unread})` : ""}
               </button>
             ))}
           </div>
@@ -189,43 +248,114 @@ export default function MentorDashboard() {
                 <h1 className="text-2xl md:text-3xl font-bold text-ink">Mentor Dashboard</h1>
                 <p className="text-muted text-sm mt-1">Welcome back, {session.name.split(" ")[0]} 👋</p>
               </div>
+
+              {/* Top Stats Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: "Total Bookings", value: bookings.length.toString() },
-                  { label: "Completed", value: completedBookings.length.toString() },
+                  { label: "Pending Confirmation", value: pendingBookings.length.toString(), highlight: pendingBookings.length > 0 },
+                  { label: "Active Sessions", value: confirmedBookings.length.toString() },
+                  { label: "Completed Sessions", value: completedBookings.length.toString() },
                   { label: "Avg Rating", value: `${avgRating} ★` },
-                  { label: "Reviews", value: reviews.length.toString() },
                 ].map((s, i) => (
-                  <div key={i} className="bg-surface rounded-xl border border-border p-4">
+                  <div key={i} className={`rounded-xl border p-4 ${s.highlight ? "bg-amber-500/10 border-amber-500/40" : "bg-surface border-border"}`}>
                     <p className="text-muted text-xs mb-1">{s.label}</p>
-                    <p className="text-ink font-semibold text-sm">{s.value}</p>
+                    <p className={`font-semibold text-base ${s.highlight ? "text-amber-400 font-bold" : "text-ink"}`}>{s.value}</p>
                   </div>
                 ))}
               </div>
+
+              {/* Pending Requests Alert */}
               {pendingBookings.length > 0 && (
-                <div className="bg-surface rounded-xl border border-border p-5">
-                  <h3 className="text-sm font-semibold text-ink mb-3">Upcoming Sessions ({pendingBookings.length})</h3>
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+                      <span>⚡</span> Pending Sessions Awaiting Confirmation ({pendingBookings.length})
+                    </h3>
+                    <button
+                      onClick={() => { setActiveTab("bookings"); setBookingFilter("pending"); }}
+                      className="text-xs text-accent hover:underline font-medium"
+                    >
+                      View All →
+                    </button>
+                  </div>
                   <div className="space-y-2">
-                    {pendingBookings.slice(0, 3).map(b => {
-                      const t = tracks.find(tr => tr.slug === b.trackSlug);
+                    {pendingBookings.map((b) => {
+                      const t = tracks.find((tr) => tr.slug === b.trackSlug);
+                      const student = getUsers().find((u) => u.id === b.userId);
                       return (
-                        <div key={b.id} className="flex items-center justify-between p-3 bg-surface2 rounded-lg border border-border">
+                        <div key={b.id} className="flex flex-wrap items-center justify-between p-3.5 bg-surface rounded-xl border border-border gap-3">
                           <div>
-                            <p className="text-sm font-medium text-ink">{t?.name || b.trackSlug}</p>
-                            <p className="text-xs text-muted">{b.date} · {b.time} · {b.duration} min</p>
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="font-mono text-[10px] font-bold text-accent bg-accent/10 border border-accent/30 rounded px-1.5 py-0.2">
+                                {b.id}
+                              </span>
+                              <p className="text-sm font-semibold text-ink">{t?.name || b.trackSlug}</p>
+                            </div>
+                            <p className="text-xs text-muted">
+                              Client: <strong className="text-ink">{student?.name || "Student"}</strong> · {b.date} at {b.time} ({b.duration} min)
+                            </p>
                           </div>
-                          <span className="text-[10px] text-accent border border-accent/30 rounded px-2 py-0.5">{b.status.toUpperCase()}</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleConfirm(b.id)}
+                              className="px-3.5 py-1.5 text-xs font-semibold bg-green-600 hover:bg-green-500 text-white rounded-lg transition-all shadow-sm"
+                            >
+                              ✓ Confirm Session
+                            </button>
+                            <button
+                              onClick={() => handleDecline(b.id)}
+                              className="px-3 py-1.5 text-xs border border-border hover:border-red-500 hover:text-red-400 text-muted rounded-lg transition-colors"
+                            >
+                              ✕ Decline
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
               )}
+
+              {/* Upcoming Confirmed Sessions */}
+              {confirmedBookings.length > 0 && (
+                <div className="bg-surface rounded-2xl border border-border p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-ink">Upcoming Confirmed Sessions ({confirmedBookings.length})</h3>
+                    <button onClick={() => { setActiveTab("bookings"); setBookingFilter("confirmed"); }} className="text-xs text-accent hover:underline">
+                      Manage →
+                    </button>
+                  </div>
+                  <div className="space-y-2.5">
+                    {confirmedBookings.slice(0, 3).map((b) => {
+                      const t = tracks.find((tr) => tr.slug === b.trackSlug);
+                      const student = getUsers().find((u) => u.id === b.userId);
+                      return (
+                        <div key={b.id} className="flex flex-wrap items-center justify-between p-3 bg-surface2 rounded-xl border border-border gap-2">
+                          <div>
+                            <p className="text-sm font-medium text-ink">{t?.name || b.trackSlug} with {student?.name || "Student"}</p>
+                            <p className="text-xs text-muted">{b.date} at {b.time} · {b.duration} min</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleComplete(b.id)}
+                              className="px-2.5 py-1 text-xs font-medium bg-accent text-white rounded-md hover:opacity-90 transition-opacity"
+                            >
+                              🎓 Mark Done
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Reviews */}
               {reviews.length > 0 && (
-                <div className="bg-surface rounded-xl border border-border p-5">
+                <div className="bg-surface rounded-2xl border border-border p-5">
                   <h3 className="text-sm font-semibold text-ink mb-3">Recent Reviews</h3>
                   <div className="space-y-3">
-                    {reviews.slice(0, 2).map(r => (
+                    {reviews.slice(0, 2).map((r) => (
                       <div key={r.id} className="border-b border-border pb-3 last:border-0 last:pb-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-yellow-400 text-sm">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
@@ -242,68 +372,162 @@ export default function MentorDashboard() {
 
           {activeTab === "bookings" && (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-              <h2 className="text-2xl font-bold text-ink">Bookings Management</h2>
-              {bookings.length === 0 ? (
-                <div className="text-center py-20 border border-dashed border-border rounded-xl">
-                  <p className="text-muted">No bookings yet. Students will book sessions with you once your profile is visible.</p>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold text-ink">Bookings Management</h2>
+                  <p className="text-sm text-muted">
+                    Confirm incoming student requests, mark completed sessions, and manage your calendar.
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Filter Tabs */}
+              <div className="flex flex-wrap gap-1.5 p-1 bg-surface rounded-xl border border-border">
+                {[
+                  { id: "all", label: `All (${bookings.length})` },
+                  { id: "pending", label: `Pending (${pendingBookings.length})`, alert: pendingBookings.length > 0 },
+                  { id: "confirmed", label: `Confirmed (${confirmedBookings.length})` },
+                  { id: "completed", label: `Completed (${completedBookings.length})` },
+                  { id: "cancelled", label: `Cancelled (${cancelledBookings.length})` },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setBookingFilter(f.id as typeof bookingFilter)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      bookingFilter === f.id
+                        ? "bg-accent text-white shadow-sm"
+                        : "text-muted hover:text-ink hover:bg-surface2"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {filteredBookings.length === 0 ? (
+                <div className="text-center py-20 border border-dashed border-border rounded-2xl bg-surface/50 p-6 space-y-2">
+                  <div className="text-3xl">📅</div>
+                  <p className="text-base font-semibold text-ink">No bookings found in this filter</p>
+                  <p className="text-xs text-muted">Select "All" to view your complete mentorship history.</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {bookings.map(b => {
-                    const t = tracks.find(tr => tr.slug === b.trackSlug);
-                    const student = getUsers().find(u => u.id === b.userId);
+                <div className="space-y-4">
+                  {filteredBookings.map((b) => {
+                    const t = tracks.find((tr) => tr.slug === b.trackSlug);
+                    const student = getUsers().find((u) => u.id === b.userId);
                     return (
-                      <div key={b.id} className="bg-surface rounded-xl border border-border p-5">
+                      <div key={b.id} className="bg-surface rounded-2xl border border-border p-5 md:p-6 space-y-4 shadow-sm">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-mono text-xs text-accent font-semibold bg-accent/10 border border-accent/30 rounded px-1.5 py-0.5">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className="font-mono text-xs text-accent font-bold bg-accent/10 border border-accent/30 rounded px-2 py-0.5">
                                 {b.id}
                               </span>
-                              <h4 className="font-semibold text-ink">{t?.name || b.trackSlug}</h4>
+                              <h4 className="font-bold text-base text-ink">{t?.name || b.trackSlug}</h4>
                             </div>
                             <p className="text-sm text-ink font-medium">
-                              Client: {student ? `${student.name} (${student.role === "intern" ? "Intern" : "Consultation"})` : "Student / Intern"}
+                              Client: <strong className="text-ink">{student ? student.name : "Student / Intern"}</strong>
+                              {student && (
+                                <span className="text-xs font-mono bg-surface2 text-muted border border-border px-2 py-0.5 rounded ml-2">
+                                  {student.role === "intern" ? "Enrolled Intern" : "Consultation Client"}
+                                </span>
+                              )}
                               {student?.email && <span className="text-muted text-xs ml-2 font-mono">&lt;{student.email}&gt;</span>}
                             </p>
-                            <p className="text-xs text-muted mt-0.5">{b.date} · {b.time} · {b.duration} min</p>
-                            {b.topic && <p className="text-xs text-muted mt-1">Topic: {b.topic}</p>}
+                            <p className="text-xs text-muted mt-1">
+                              📅 <strong>{b.date}</strong> at <strong>{b.time}</strong> · {b.duration} min duration
+                            </p>
+                            {b.topic && (
+                              <p className="text-xs text-muted mt-1 bg-surface2/60 border border-border p-2 rounded-lg">
+                                <strong>Topic / Question:</strong> {b.topic}
+                              </p>
+                            )}
                           </div>
+
                           <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-mono rounded px-2 py-0.5 ${
-                              b.status === "completed" ? "bg-green-900/30 text-green-400 border border-green-800" :
-                              b.status === "confirmed" ? "bg-blue-900/30 text-blue-400 border border-blue-800" :
-                              b.status === "cancelled" ? "bg-red-900/30 text-red-400 border border-red-800" :
-                              "bg-accent/10 text-accent border border-accent/30"
-                            }`}>{b.status.toUpperCase()}</span>
+                            <span className={`text-[10px] font-mono font-bold rounded-full px-2.5 py-1 ${
+                              b.status === "completed" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" :
+                              b.status === "confirmed" || b.status === "upcoming" ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" :
+                              b.status === "cancelled" ? "bg-red-500/20 text-red-400 border border-red-500/30" :
+                              "bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse"
+                            }`}>
+                              ● {b.status.toUpperCase()}
+                            </span>
                           </div>
                         </div>
 
-                        {b.status === "pending" && (
-                          <div className="mt-4 pt-3 border-t border-border flex items-center justify-between gap-2">
-                            <p className="text-xs text-yellow-400">⚡ Awaiting your confirmation</p>
-                            <div className="flex gap-2">
+                        {/* Action Buttons Bar */}
+                        <div className="pt-3 border-t border-border flex flex-wrap items-center justify-between gap-3">
+                          {b.status === "pending" && (
+                            <div className="flex flex-wrap items-center justify-between w-full gap-2 bg-amber-500/5 border border-amber-500/20 p-3 rounded-xl">
+                              <p className="text-xs text-amber-400 font-medium">
+                                ⚡ New booking request — please accept or decline:
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleConfirm(b.id)}
+                                  className="px-4 py-2 text-xs font-bold bg-green-600 hover:bg-green-500 text-white rounded-lg transition-all shadow-md flex items-center gap-1.5"
+                                >
+                                  <span>✓</span> Confirm Session
+                                </button>
+                                <button
+                                  onClick={() => handleDecline(b.id)}
+                                  className="px-3.5 py-2 text-xs border border-border hover:border-red-500 hover:text-red-400 text-muted rounded-lg transition-colors flex items-center gap-1"
+                                >
+                                  <span>✕</span> Decline
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {(b.status === "confirmed" || b.status === "upcoming") && (
+                            <div className="flex flex-wrap items-center justify-between w-full gap-2 bg-blue-500/5 border border-blue-500/20 p-3 rounded-xl">
+                              <p className="text-xs text-blue-400 font-medium">
+                                🚀 Confirmed session — mark done when finished or publish notes:
+                              </p>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleComplete(b.id)}
+                                  className="px-3.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all shadow-sm flex items-center gap-1"
+                                >
+                                  <span>🎓</span> Mark as Completed
+                                </button>
+                                <button
+                                  onClick={() => handleOpenNoteEditorForBooking(b.id)}
+                                  className="px-3 py-1.5 text-xs bg-accent/20 border border-accent/40 text-accent hover:bg-accent/30 rounded-lg transition-colors flex items-center gap-1"
+                                >
+                                  <span>📝</span> Write Session Notes
+                                </button>
+                                <button
+                                  onClick={() => handleDecline(b.id)}
+                                  className="px-3 py-1.5 text-xs border border-border hover:border-red-500 hover:text-red-400 text-muted rounded-lg transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {b.status === "completed" && (
+                            <div className="flex flex-wrap items-center justify-between w-full gap-2 text-xs">
+                              <span className="text-emerald-400 font-medium flex items-center gap-1">
+                                ✓ Session Completed successfully
+                              </span>
                               <button
-                                onClick={() => {
-                                  confirmBookingByMentor(b.id);
-                                  if (session) setBookings(getBookingsByMentor(session.id));
-                                }}
-                                className="px-3 py-1.5 text-xs font-semibold bg-green-600 hover:bg-green-500 text-white rounded-lg transition-colors"
+                                onClick={() => handleOpenNoteEditorForBooking(b.id)}
+                                className="px-3 py-1.5 bg-surface2 border border-border hover:border-accent text-ink rounded-lg transition-colors flex items-center gap-1.5"
                               >
-                                Confirm Session
-                              </button>
-                              <button
-                                onClick={() => {
-                                  declineBookingByMentor(b.id);
-                                  if (session) setBookings(getBookingsByMentor(session.id));
-                                }}
-                                className="px-3 py-1.5 text-xs border border-border hover:border-red-500 hover:text-red-400 text-muted rounded-lg transition-colors"
-                              >
-                                Decline
+                                <span>📝</span> Publish / Update Session Notes
                               </button>
                             </div>
-                          </div>
-                        )}
+                          )}
+
+                          {b.status === "cancelled" && (
+                            <div className="w-full text-xs text-muted italic">
+                              This booking has been cancelled and refunded.
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
