@@ -13,6 +13,7 @@ import {
   setSession,
   getAllMentors,
   getAllTracks,
+  syncWithServer,
 } from "@/lib/store";
 import type { MentorData } from "@/lib/data";
 
@@ -61,9 +62,14 @@ export default function RegisterForm() {
   const [customTrackInput, setCustomTrackInput] = useState("");
   const [roleTitleSelect, setRoleTitleSelect] = useState("Student");
 
-  useEffect(() => {
+  function refreshMentors() {
     const list = getAllMentors();
     setMentorList(list);
+  }
+
+  useEffect(() => {
+    refreshMentors();
+    syncWithServer().then(refreshMentors);
   }, []);
 
   function handleAddCustomTrack() {
@@ -394,7 +400,12 @@ export default function RegisterForm() {
               key={key}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.99 }}
-              onClick={() => { setRole(key); setStep("form"); }}
+              onClick={() => {
+                setRole(key);
+                setStep("form");
+                refreshMentors();
+                syncWithServer().then(refreshMentors);
+              }}
               className={`w-full text-left rounded-xl border-2 px-5 py-4 transition-all ${info.color}`}
             >
               <div className="flex items-center gap-3">

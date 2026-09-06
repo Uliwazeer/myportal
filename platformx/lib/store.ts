@@ -509,7 +509,10 @@ export function getAllMentors(): import("./data").MentorData[] {
     return computeMentorStats(baseMentor, m.id);
   });
 
-  return [...enrichedStaticMentors, ...dynamicMentors];
+  const staticIds = new Set(enrichedStaticMentors.map((m: import("./data").MentorData) => m.id));
+  const uniqueDynamicMentors = dynamicMentors.filter((m: import("./data").MentorData) => !staticIds.has(m.id));
+
+  return [...enrichedStaticMentors, ...uniqueDynamicMentors];
 }
 
 export function getAllTracks(): import("./data").Track[] {
