@@ -7,22 +7,25 @@ import StatusPanel from "@/components/StatusPanel";
 import JourneyDiagram from "@/components/JourneyDiagram";
 import TrackCard from "@/components/TrackCard";
 import LabCard from "@/components/LabCard";
-import { tracks, labs } from "@/lib/data";
-import { getAllMentors, getBookings, getUsers, syncWithServer } from "@/lib/store";
-import type { MentorData, Booking, UserProfile } from "@/lib/data";
+import { labs } from "@/lib/data";
+import { getAllMentors, getAllTracks, getBookings, getUsers, syncWithServer } from "@/lib/store";
+import type { MentorData, Booking, UserProfile, Track } from "@/lib/data";
 
 export default function HomePage() {
   const [mentorsList, setMentorsList] = useState<MentorData[]>([]);
+  const [tracksList, setTracksList] = useState<Track[]>([]);
   const [bookingsList, setBookingsList] = useState<Booking[]>([]);
   const [usersList, setUsersList] = useState<UserProfile[]>([]);
 
   useEffect(() => {
     setMentorsList(getAllMentors());
+    setTracksList(getAllTracks());
     setBookingsList(getBookings());
     setUsersList(getUsers());
 
     syncWithServer().then(() => {
       setMentorsList(getAllMentors());
+      setTracksList(getAllTracks());
       setBookingsList(getBookings());
       setUsersList(getUsers());
     });
@@ -162,7 +165,7 @@ export default function HomePage() {
                 <div className="space-y-3">
                   {recentInterns.map((intern) => {
                     const mentor = mentorsList.find((m) => m.id === intern.mentorId);
-                    const trackObj = tracks.find((t) => t.slug === intern.trackSlug);
+                    const trackObj = tracksList.find((t) => t.slug === intern.trackSlug);
                     return (
                       <div key={intern.id} className="p-3 rounded-xl bg-surface2 border border-border/60 flex items-center justify-between text-xs">
                         <div>
@@ -230,7 +233,7 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="mt-8 grid gap-6 md:grid-cols-3">
-          {tracks.map((t, index) => (
+          {tracksList.map((t, index) => (
             <motion.div
               key={t.slug}
               initial={{ opacity: 0, y: 40 }}

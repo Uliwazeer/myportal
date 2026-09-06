@@ -1,21 +1,72 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import { tracks, mentors } from "@/lib/data";
+import { getAllTracks, getAllMentors, syncWithServer } from "@/lib/store";
+import type { Track, MentorData } from "@/lib/data";
 
-export function generateStaticParams() {
-  return tracks.map((t) => ({ slug: t.slug }));
-}
+export default function TrackDetailPage() {
+  const { slug } = useParams() as { slug: string };
+  const [track, setTrack] = useState<Track | null>(null);
+  const [trackMentors, setTrackMentors] = useState<MentorData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
-  const track = tracks.find((t) => t.slug === params.slug);
-  return { title: track ? `${track.name} — PlatformX` : "Track Not Found" };
-}
+  function loadTrack() {
+    const allT = getAllTracks();
+    const allM = getAllMentors();
+    let found = allT.find((t) => t.slug === slug);
+    if (!found) {
+      const matchingMentors = allM.filter((m) => m.tracks.includes(slug));
+      if (matchingMentors.length > 0) {
+        const formatted = slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+        found = {
+          slug,
+          name: formatted,
+          tagline: `Specialized ${formatted} track guided by industry experts.`,
+          level: matchingMentors[0].level || "Junior",
+          durationWeeks: 8,
+          modules: [
+            { week: 1, title: `${formatted} Core Concepts`, topics: ["Fundamentals", "Architecture", "Tooling"] },
+            { week: 2, title: "Applied Implementation", topics: ["Hands-on Labs", "Real-world Tasks"] },
+            { week: 8, title: "Capstone Project", topics: ["Production Deployment", "Mentor Review"] },
+          ],
+          finalProject: `Full production ${formatted} project with 1-on-1 mentor code reviews`,
+        };
+      }
+    }
+    setTrack(found || null);
+    if (found) {
+      setTrackMentors(allM.filter((m) => m.tracks.includes(slug)));
+    }
+  }
 
-export default function TrackDetailPage({ params }: { params: { slug: string } }) {
-  const track = tracks.find((t) => t.slug === params.slug);
-  if (!track) notFound();
+  useEffect(() => {
+    loadTrack();
+    setLoading(false);
+    syncWithServer().then(loadTrack);
+  }, [slug]);
 
-  const trackMentors = mentors.filter((m) => m.tracks.includes(track.slug));
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="h-6 w-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (!track) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted text-lg">Track not found.</p>
+          <Link href="/tracks" className="text-accent hover:underline text-sm mt-2 block">
+            Back to Tracks
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className="mx-auto max-w-content px-6 py-16">
@@ -80,40 +131,44 @@ export default function TrackDetailPage({ params }: { params: { slug: string } }
         </div>
       )}
 
-      <div className="mt-10 space-y-3">
-        <h2 className="text-sm font-medium text-muted uppercase tracking-wider">Weekly Schedule</h2>
-        <ol className="space-y-3">
-          {track.modules.map((m) => (
-            <li key={m.week} className="rounded-lg border border-border bg-surface p-4 transition-colors hover:border-accent/50">
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-xs text-accent">
-                  Week {String(m.week).padStart(2, "0")}
-                </span>
-                <h3 className="text-sm font-medium text-ink">{m.title}</h3>
-              </div>
-              <ul className="mt-2 flex flex-wrap gap-2">
-                {m.topics.map((t) => (
-                  <li
-                    key={t}
-                    className="rounded-md bg-surface2 px-2 py-1 text-xs text-muted border border-border/50"
-                  >
-                    {t}
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ol>
-      </div>
+      {track.modules && track.modules.length > 0 && (
+        <div className="mt-10 space-y-3">
+          <h2 className="text-sm font-medium text-muted uppercase tracking-wider">Weekly Schedule</h2>
+          <ol className="space-y-3">
+            {track.modules.map((m) => (
+              <li key={m.week} className="rounded-lg border border-border bg-surface p-4 transition-colors hover:border-accent/50">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-xs text-accent">
+                    Week {String(m.week).padStart(2, "0")}
+                  </span>
+                  <h3 className="text-sm font-medium text-ink">{m.title}</h3>
+                </div>
+                <ul className="mt-2 flex flex-wrap gap-2">
+                  {m.topics.map((t) => (
+                    <li
+                      key={t}
+                      className="rounded-md bg-surface2 px-2 py-1 text-xs text-muted border border-border/50"
+                    >
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
-      <div className="mt-10 rounded-lg border border-border bg-surface p-5">
-        <h2 className="text-sm font-medium text-muted uppercase tracking-wider">Final Project</h2>
-        <p className="mt-2 font-mono text-sm leading-relaxed text-ink">{track.finalProject}</p>
-      </div>
+      {track.finalProject && (
+        <div className="mt-10 rounded-lg border border-border bg-surface p-5">
+          <h2 className="text-sm font-medium text-muted uppercase tracking-wider">Final Project</h2>
+          <p className="mt-2 font-mono text-sm leading-relaxed text-ink">{track.finalProject}</p>
+        </div>
+      )}
 
       <div className="mt-8 flex flex-wrap items-center gap-4">
         <Link
-          href="/register"
+          href={`/register?role=intern&track=${track.slug}`}
           className="rounded-md bg-accent px-5 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 shadow-[0_0_15px_rgba(230,0,0,0.4)]"
         >
           Register for this Track

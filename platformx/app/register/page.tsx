@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import RegisterForm from "./RegisterForm";
 import RegisterMentorsList from "./RegisterMentorsList";
 
@@ -12,7 +13,9 @@ export default function RegisterPage() {
           <p className="mt-2 text-sm leading-relaxed text-muted mb-8 border-b border-border pb-6">
             We will send a 1-minute verification code to your email. After verification, you can book your consultation or proceed with your intern assessment.
           </p>
-          <RegisterForm />
+          <Suspense fallback={<div className="py-12 flex justify-center"><div className="h-6 w-6 rounded-full border-2 border-accent border-t-transparent animate-spin" /></div>}>
+            <RegisterForm />
+          </Suspense>
         </div>
 
         <div className="lg:col-span-5 flex flex-col gap-6">

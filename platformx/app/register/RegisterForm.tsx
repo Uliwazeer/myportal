@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
-import { tracks, mentors as staticMentors, levels } from "@/lib/data";
+import { levels } from "@/lib/data";
 import {
   getUserByEmail,
   getUserByPhone,
@@ -15,7 +15,7 @@ import {
   getAllTracks,
   syncWithServer,
 } from "@/lib/store";
-import type { MentorData } from "@/lib/data";
+import type { MentorData, Track } from "@/lib/data";
 
 type Role = "intern" | "mentor" | "consultation";
 type Step = "role" | "form" | "otp" | "success";
@@ -46,6 +46,7 @@ const roleInfo = {
 
 export default function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [role, setRole] = useState<Role | null>(null);
   const [step, setStep] = useState<Step>("role");
   const [status, setStatus] = useState<Status>("idle");
@@ -57,20 +58,48 @@ export default function RegisterForm() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const [mentorList, setMentorList] = useState<MentorData[]>(staticMentors);
-  const [mentorTrackOptions, setMentorTrackOptions] = useState(tracks);
+  const [mentorList, setMentorList] = useState<MentorData[]>([]);
+  const [mentorTrackOptions, setMentorTrackOptions] = useState<Track[]>([]);
   const [customTrackInput, setCustomTrackInput] = useState("");
   const [roleTitleSelect, setRoleTitleSelect] = useState("Student");
 
   function refreshMentors() {
     const list = getAllMentors();
+    const tList = getAllTracks();
     setMentorList(list);
+    setMentorTrackOptions(tList);
   }
 
   useEffect(() => {
     refreshMentors();
     syncWithServer().then(refreshMentors);
-  }, []);
+
+    const initialRole = searchParams.get("role") as Role | null;
+    const initialMentor = searchParams.get("mentor");
+    const initialTrack = searchParams.get("track");
+
+    if (initialRole && ["intern", "mentor", "consultation"].includes(initialRole)) {
+      setRole(initialRole);
+      setStep("form");
+    }
+
+    if (initialMentor) {
+      const allM = getAllMentors();
+      const targetM = allM.find((m) => m.id === initialMentor);
+      if (targetM) {
+        setForm((f) => ({
+          ...f,
+          mentorId: targetM.id,
+          trackSlug: targetM.tracks[0] || "",
+        }));
+      }
+    } else if (initialTrack) {
+      setForm((f) => ({
+        ...f,
+        trackSlug: initialTrack,
+      }));
+    }
+  }, [searchParams]);
 
   function handleAddCustomTrack() {
     const trimmed = customTrackInput.trim();
@@ -127,11 +156,20 @@ export default function RegisterForm() {
     if (key === "mentorId") {
       const m = mentorList.find((m) => m.id === value);
       const fallbackTrack = m?.title ? m.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") : "software-engineer";
-      const resolvedTrack = m && m.tracks.length > 0 ? m.tracks[0] : fallbackTrack;
+      const resolvedTrack = m && m.tracks.length > 0 ? (form.trackSlug && m.tracks.includes(form.trackSlug) ? form.trackSlug : m.tracks[0]) : fallbackTrack;
       setForm((f) => ({
         ...f,
         mentorId: value as string,
         trackSlug: resolvedTrack,
+      }));
+    } else if (key === "trackSlug") {
+      // If user selected a track, check if currently selected mentor supports it
+      const currentM = mentorList.find((m) => m.id === form.mentorId);
+      const mentorStillValid = currentM && currentM.tracks.includes(value as string);
+      setForm((f) => ({
+        ...f,
+        trackSlug: value as string,
+        mentorId: mentorStillValid ? f.mentorId : "",
       }));
     } else {
       setForm((f) => ({ ...f, [key]: value }));
@@ -652,37 +690,39 @@ export default function RegisterForm() {
           <div className="h-px bg-border" />
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Select Mentor *</label>
+              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Learning Track *</label>
+              <select
+                required
+                className={inputClass}
+                value={form.trackSlug}
+                onChange={(e) => update("trackSlug", e.target.value)}
+              >
+                <option value="">-- Choose Track --</option>
+                {mentorTrackOptions.map((t) => (
+                  <option key={t.slug} value={t.slug}>
+                    {t.name} ({t.level})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Dedicated Mentor *</label>
               <select
                 required
                 className={inputClass}
                 value={form.mentorId}
                 onChange={(e) => update("mentorId", e.target.value)}
               >
-                <option value="">-- Choose Your Mentor --</option>
-                {mentorList.map((m) => (
+                <option value="">-- Choose Dedicated Mentor --</option>
+                {(form.trackSlug
+                  ? mentorList.filter((m) => m.tracks.includes(form.trackSlug))
+                  : mentorList
+                ).map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name} — {m.title}
                   </option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Assigned Track</label>
-              <input
-                disabled
-                className={`${inputClass} opacity-80 bg-surface2 font-medium`}
-                value={
-                  form.mentorId
-                    ? (() => {
-                        const m = mentorList.find((m) => m.id === form.mentorId);
-                        const allT = getAllTracks();
-                        const tObj = allT.find((t) => t.slug === form.trackSlug);
-                        return tObj?.name || m?.title || form.trackSlug || "Track Assigned by Mentor";
-                      })()
-                    : "Select a mentor to assign track"
-                }
-              />
             </div>
             <div>
               <label className="block text-xs font-medium text-muted uppercase tracking-wider mb-1.5">Current Level *</label>
