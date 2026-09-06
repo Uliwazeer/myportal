@@ -2,7 +2,8 @@
 // Data is stored centrally in the server database (data/db.json)
 // and cached in localStorage for instant offline/low-latency client access.
 
-import type { UserProfile, Booking, Review, Notification } from "./data";
+import type { UserProfile, Booking, Review, Notification, SessionNote, VerifiedCertificate } from "./data";
+import { sampleCertificates } from "./data";
 
 // Initial fallback seeds in case localStorage is empty before first server sync
 const DEFAULT_SEED_USERS: UserProfile[] = [
@@ -954,3 +955,125 @@ export function getPlatformStats() {
     completedBookings: bookings.filter((b) => b.status === "completed").length,
   };
 }
+
+// ─── Session Notes & Action Items (Homework) ─────────────────
+const DEFAULT_SESSION_NOTES: SessionNote[] = [
+  {
+    id: "sn-001",
+    bookingId: "MP-2026-104921",
+    mentorId: "ali-wazeer",
+    mentorName: "Ali Wazeer",
+    userId: "intern-1",
+    userName: "Ahmed Mahmoud",
+    date: "2026-08-25",
+    topicsDiscussed: [
+      "Multi-cluster Kubernetes Architecture & CNI Selection (Cilium vs Calico)",
+      "GitOps with ArgoCD ApplicationSets & Helm Values Matrix",
+      "Production Prometheus Alerting & SLO/SLI design",
+    ],
+    homework: [
+      { id: "hw-1", task: "Configure Cilium eBPF mesh with Hubble UI in local Kind cluster", completed: true, dueDate: "2026-08-28" },
+      { id: "hw-2", task: "Write an ArgoCD ApplicationSet to deploy ingress-nginx across 3 virtual clusters", completed: true, dueDate: "2026-09-02" },
+      { id: "hw-3", task: "Implement Prometheus Rule for pod crashlooping SLO with PagerDuty webhook", completed: false, dueDate: "2026-09-10" },
+    ],
+    nextSessionFocus: "Deep dive into Terraform custom modules & Crossplane control planes.",
+    mentorAdvice: "Focus on clean Git commit history and declarative infrastructure code. Review Kubernetes RBAC least-privilege principles before our next sync.",
+    recommendedResources: [
+      { title: "Cilium eBPF Architecture Deep Dive", url: "https://cilium.io", type: "Doc" },
+      { title: "ArgoCD Enterprise Best Practices Repository", url: "https://github.com/argoproj/argo-cd", type: "Repo" },
+      { title: "Multi-Region Kubernetes Hands-on Lab", url: "/labs", type: "Lab" },
+    ],
+    updatedAt: "2026-08-26T14:30:00.000Z",
+  },
+  {
+    id: "sn-002",
+    bookingId: "MP-2026-218492",
+    mentorId: "charles",
+    mentorName: "Charles",
+    userId: "intern-2",
+    userName: "Youssef Ibrahim",
+    date: "2026-08-27",
+    topicsDiscussed: [
+      "High-throughput Distributed Payment & Auth Microservices",
+      "Redis Distributed Locking & Cache Stampede Prevention",
+      "PostgreSQL Partitioning & Connection Pooling with PgBouncer",
+    ],
+    homework: [
+      { id: "hw-201", task: "Implement Redlock algorithm with Node.js and Redis cluster", completed: true, dueDate: "2026-08-30" },
+      { id: "hw-202", task: "Benchmark PgBouncer transaction pooling vs session pooling under 500 concurrent connections", completed: false, dueDate: "2026-09-08" },
+    ],
+    nextSessionFocus: "Apache Kafka event streaming, consumer groups, and idempotency guarantees.",
+    mentorAdvice: "Always profile database queries using EXPLAIN ANALYZE before optimizing in application code.",
+    recommendedResources: [
+      { title: "Distributed Systems Patterns", url: "https://martinfowler.com", type: "Doc" },
+      { title: "Redis Architecture & Patterns", url: "https://redis.io", type: "Doc" },
+    ],
+    updatedAt: "2026-08-28T10:15:00.000Z",
+  },
+];
+
+export function getSessionNotes(): SessionNote[] {
+  return getItem<SessionNote>("px_session_notes", DEFAULT_SESSION_NOTES);
+}
+
+export function getSessionNotesByUser(userId: string): SessionNote[] {
+  return getSessionNotes().filter((n) => n.userId === userId);
+}
+
+export function getSessionNotesByMentor(mentorId: string): SessionNote[] {
+  return getSessionNotes().filter((n) => n.mentorId === mentorId);
+}
+
+export function saveSessionNote(note: Omit<SessionNote, "id" | "updatedAt"> & { id?: string }): SessionNote {
+  const notes = getSessionNotes();
+  const id = note.id || "sn-" + generateId();
+  const savedNote: SessionNote = {
+    ...note,
+    id,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const existingIdx = notes.findIndex((n) => n.id === id);
+  let updatedNotes: SessionNote[];
+  if (existingIdx >= 0) {
+    updatedNotes = [...notes];
+    updatedNotes[existingIdx] = savedNote;
+  } else {
+    updatedNotes = [savedNote, ...notes];
+  }
+
+  setItem("px_session_notes", updatedNotes);
+  return savedNote;
+}
+
+export function toggleHomework(noteId: string, hwId: string): boolean {
+  const notes = getSessionNotes();
+  const noteIdx = notes.findIndex((n) => n.id === noteId);
+  if (noteIdx < 0) return false;
+
+  const note = notes[noteIdx];
+  const updatedHw = note.homework.map((hw) =>
+    hw.id === hwId ? { ...hw, completed: !hw.completed } : hw
+  );
+
+  const updatedNote: SessionNote = {
+    ...note,
+    homework: updatedHw,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const updatedNotes = [...notes];
+  updatedNotes[noteIdx] = updatedNote;
+  setItem("px_session_notes", updatedNotes);
+  return true;
+}
+
+// ─── Verified Certificates ────────────────────────────────────
+export function getCertificates(): VerifiedCertificate[] {
+  return getItem<VerifiedCertificate>("px_certificates", sampleCertificates);
+}
+
+export function getCertificateByCode(code: string): VerifiedCertificate | undefined {
+  return getCertificates().find((c) => c.code.toLowerCase() === code.toLowerCase().trim());
+}
+

@@ -30,41 +30,57 @@ export default function RegisterMentorsList() {
         </Link>
       </div>
 
-      <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1 scrollbar-thin">
+      <div className="space-y-2.5 max-h-[340px] overflow-y-auto pr-1 scrollbar-thin">
         {mentors.map((m) => {
           const mTracks = tracks.filter((t) => m.tracks?.includes(t.slug));
-          const primaryTrack = mTracks.length > 0 ? mTracks[0].name : m.title;
 
           return (
             <div
               key={m.id}
-              className="flex items-center justify-between p-2.5 rounded-lg border border-border/60 bg-surface/80 hover:border-accent/50 transition-colors gap-2"
+              className="p-3 rounded-xl border border-border/60 bg-surface/80 hover:border-accent/50 transition-all space-y-2"
             >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div
-                  className={`w-7 h-7 rounded-full ${m.color || "bg-accent"} flex items-center justify-center text-white text-[11px] font-bold shrink-0`}
-                >
-                  {m.initials}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    className={`w-8 h-8 rounded-full ${m.color || "bg-accent"} flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm`}
+                  >
+                    {m.initials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-ink truncate">{m.name}</p>
+                    <p className="text-[11px] text-accent font-medium truncate">{m.title}</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-ink truncate">{m.name}</p>
-                  <p className="text-[10px] text-muted truncate">{primaryTrack}</p>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Link
+                    href={`/mentors/${m.id}`}
+                    className="px-2.5 py-1 text-[11px] border border-border rounded-md text-muted hover:text-ink hover:border-ink transition-colors"
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    href={`/book?mentor=${m.id}`}
+                    className="px-2.5 py-1 text-[11px] bg-accent text-white rounded-md hover:opacity-90 font-semibold transition-opacity shadow-sm"
+                  >
+                    Book
+                  </Link>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Link
-                  href={`/mentors/${m.id}`}
-                  className="px-2.5 py-1 text-[11px] border border-border rounded-md text-muted hover:text-ink hover:border-ink transition-colors"
-                >
-                  Profile
-                </Link>
-                <Link
-                  href={`/book?mentor=${m.id}`}
-                  className="px-2.5 py-1 text-[11px] bg-accent text-white rounded-md hover:opacity-90 font-medium transition-opacity"
-                >
-                  Book
-                </Link>
+              {/* Tracks Badges */}
+              <div className="flex flex-wrap items-center gap-1 pl-10">
+                {mTracks.slice(0, 2).map((t) => (
+                  <span
+                    key={t.slug}
+                    className="text-[9px] font-mono bg-surface2 text-muted border border-border/70 rounded px-1.5 py-0.2"
+                  >
+                    {t.name}
+                  </span>
+                ))}
+                <span className="text-[9px] text-yellow-400 font-semibold ml-auto flex items-center gap-0.5">
+                  ★ {m.rating} <span className="text-muted font-normal">({m.completedConsultations || 0} sessions)</span>
+                </span>
               </div>
             </div>
           );

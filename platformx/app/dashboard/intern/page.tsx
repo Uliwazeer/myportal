@@ -4,15 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { getSession, clearSession, getBookingsByUser, getNotifications, markNotificationsRead, getUnreadCount, getUsers, cancelBookingByIntern, getAllMentors, getAllTracks, syncWithServer } from "@/lib/store";
+import { getSession, clearSession, getBookingsByUser, getNotifications, markNotificationsRead, getUnreadCount, getUsers, cancelBookingByIntern, getAllMentors, getAllTracks, syncWithServer, getSessionNotesByUser, toggleHomework } from "@/lib/store";
 import { mentors as staticMentors, tracks } from "@/lib/data";
-import type { UserProfile, Booking, MentorData, Track } from "@/lib/data";
+import type { UserProfile, Booking, MentorData, Track, SessionNote } from "@/lib/data";
 
 const navItems = [
   { label: "Overview", id: "overview" },
+  { label: "Session Notes & Homework", id: "notes" },
   { label: "My Track", id: "track" },
-  { label: "Labs", id: "labs" },
   { label: "Consultations", id: "consultations" },
+  { label: "Labs", id: "labs" },
   { label: "Notifications", id: "notifications" },
 ];
 
@@ -23,6 +24,7 @@ export default function InternDashboard() {
   const [mentors, setMentors] = useState<MentorData[]>([]);
   const [allTracksList, setAllTracksList] = useState<Track[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [sessionNotes, setSessionNotes] = useState<SessionNote[]>([]);
   const [unread, setUnread] = useState(0);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -34,6 +36,7 @@ export default function InternDashboard() {
     setMentors(getAllMentors());
     setAllTracksList(getAllTracks());
     setBookings(getBookingsByUser(s.id));
+    setSessionNotes(getSessionNotesByUser(s.id));
     setUnread(getUnreadCount(s.id));
 
     syncWithServer().then(() => {
@@ -43,10 +46,18 @@ export default function InternDashboard() {
         setMentors(getAllMentors());
         setAllTracksList(getAllTracks());
         setBookings(getBookingsByUser(updatedS.id));
+        setSessionNotes(getSessionNotesByUser(updatedS.id));
         setUnread(getUnreadCount(updatedS.id));
       }
     });
   }, [router]);
+
+  function handleToggleHw(noteId: string, hwId: string) {
+    toggleHomework(noteId, hwId);
+    if (session) {
+      setSessionNotes(getSessionNotesByUser(session.id));
+    }
+  }
 
   function handleLogout() {
     clearSession();
@@ -236,22 +247,197 @@ export default function InternDashboard() {
               )}
 
               {/* Quick actions */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 <Link href="/book" className="flex items-center gap-3 p-4 bg-accent/10 border border-accent/30 rounded-xl hover:bg-accent/20 transition-colors">
                   <span className="text-2xl">📅</span>
                   <div>
                     <p className="font-medium text-ink text-sm">Book a Session</p>
-                    <p className="text-xs text-muted">Schedule a 40 or 60 min consultation</p>
+                    <p className="text-xs text-muted">Schedule consultation</p>
                   </div>
                 </Link>
-                <Link href="/mentors" className="flex items-center gap-3 p-4 bg-surface border border-border rounded-xl hover:bg-surface2 transition-colors">
-                  <span className="text-2xl">👤</span>
+                <Link href="/roadmap" className="flex items-center gap-3 p-4 bg-surface border border-border rounded-xl hover:bg-surface2 transition-colors">
+                  <span className="text-2xl">🗺️</span>
                   <div>
-                    <p className="font-medium text-ink text-sm">Find a Mentor</p>
-                    <p className="text-xs text-muted">Browse all available mentors</p>
+                    <p className="font-medium text-ink text-sm">Career Roadmap</p>
+                    <p className="text-xs text-muted">Goals & Milestones</p>
+                  </div>
+                </Link>
+                <Link href="/assessment" className="flex items-center gap-3 p-4 bg-surface border border-border rounded-xl hover:bg-surface2 transition-colors">
+                  <span className="text-2xl">🎯</span>
+                  <div>
+                    <p className="font-medium text-ink text-sm">Skill Assessment</p>
+                    <p className="text-xs text-muted">Diagnostic & Matches</p>
+                  </div>
+                </Link>
+                <Link href="/verify/MP-CERT-2026-AW01" className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/20 transition-colors">
+                  <span className="text-2xl">🛡️</span>
+                  <div>
+                    <p className="font-medium text-ink text-sm">Verified Certificate</p>
+                    <p className="text-xs text-emerald-400">View credential ledger</p>
                   </div>
                 </Link>
               </div>
+            </motion.div>
+          )}
+
+          {/* Session Notes & Homework Tab */}
+          {activeTab === "notes" && (
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold text-ink">Session Notes & Action Items</h2>
+                  <p className="text-sm text-muted">
+                    Review post-session takeaways, complete your homework checklist, and check mentor recommendations.
+                  </p>
+                </div>
+                <Link
+                  href="/roadmap"
+                  className="inline-flex items-center gap-2 text-xs font-medium bg-accent text-white px-3 py-2 rounded-lg hover:opacity-90 transition-opacity self-start"
+                >
+                  View Full Career Roadmap →
+                </Link>
+              </div>
+
+              {sessionNotes.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-border rounded-2xl bg-surface/50 p-6 space-y-3">
+                  <div className="text-3xl">📝</div>
+                  <h3 className="text-base font-semibold text-ink">No Session Notes Yet</h3>
+                  <p className="text-sm text-muted max-w-md mx-auto">
+                    Once you complete a 1-on-1 mentorship session, your mentor will publish custom technical notes, homework tasks, and learning material here.
+                  </p>
+                  <Link href="/book" className="inline-block text-xs bg-accent text-white px-4 py-2 rounded-lg mt-2">
+                    Book a Mentorship Session
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {sessionNotes.map((note) => {
+                    const completedHwCount = note.homework.filter((h) => h.completed).length;
+                    const hwProgress = Math.round((completedHwCount / (note.homework.length || 1)) * 100);
+
+                    return (
+                      <div key={note.id} className="bg-surface rounded-2xl border border-border p-5 md:p-6 space-y-6 shadow-sm">
+                        {/* Note Top Bar */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+                          <div className="flex items-center gap-3">
+                            <span className="h-3 w-3 rounded-full bg-accent" />
+                            <div>
+                              <h3 className="text-base font-bold text-ink flex items-center gap-2">
+                                Session with {note.mentorName}
+                                <span className="text-[10px] font-mono bg-surface2 text-muted border border-border px-2 py-0.5 rounded">
+                                  {note.bookingId}
+                                </span>
+                              </h3>
+                              <p className="text-xs text-muted">Conducted on {note.date}</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono text-muted">Homework:</span>
+                            <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+                              hwProgress === 100 ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-accent/10 text-accent border border-accent/30"
+                            }`}>
+                              {completedHwCount} / {note.homework.length} Done ({hwProgress}%)
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Topics Discussed */}
+                        <div>
+                          <h4 className="text-xs font-mono uppercase tracking-wider text-muted mb-2">
+                            Key Architectural Topics Covered
+                          </h4>
+                          <ul className="space-y-1.5">
+                            {note.topicsDiscussed.map((topic, i) => (
+                              <li key={i} className="flex items-start gap-2 text-sm text-ink">
+                                <span className="text-accent font-bold mt-0.5">•</span>
+                                <span>{topic}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Action Items / Homework Checklist */}
+                        <div className="bg-surface2/60 rounded-xl p-4 border border-border">
+                          <h4 className="text-xs font-mono uppercase tracking-wider text-accent font-semibold mb-3 flex items-center justify-between">
+                            <span>✅ Action Items & Homework Checklist</span>
+                            <span className="text-[10px] text-muted font-normal lowercase">(click to mark completed)</span>
+                          </h4>
+                          <div className="space-y-2.5">
+                            {note.homework.map((hw) => (
+                              <label
+                                key={hw.id}
+                                onClick={() => handleToggleHw(note.id, hw.id)}
+                                className={`flex items-start gap-3 p-2.5 rounded-lg border transition-all cursor-pointer select-none ${
+                                  hw.completed
+                                    ? "bg-emerald-500/5 border-emerald-500/30 text-muted line-through"
+                                    : "bg-surface border-border hover:border-accent text-ink"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={hw.completed}
+                                  onChange={() => {}} // handled by label onClick
+                                  className="mt-1 h-4 w-4 rounded border-border text-accent focus:ring-accent"
+                                />
+                                <div className="flex-1 text-sm leading-snug">
+                                  <span>{hw.task}</span>
+                                  {hw.dueDate && (
+                                    <span className="block text-[11px] font-mono text-muted no-underline mt-0.5">
+                                      Due by: {hw.dueDate}
+                                    </span>
+                                  )}
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Mentor Guidance & Recommended Material */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-accent/5 border border-accent/20 rounded-xl p-4">
+                            <h4 className="text-xs font-mono uppercase tracking-wider text-accent font-bold mb-1.5">
+                              💡 Mentor's Takeaway Advice
+                            </h4>
+                            <p className="text-sm text-ink/90 leading-relaxed italic">
+                              "{note.mentorAdvice}"
+                            </p>
+                            {note.nextSessionFocus && (
+                              <p className="text-xs text-muted mt-3 pt-2 border-t border-accent/20">
+                                <strong>Next session focus:</strong> {note.nextSessionFocus}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="bg-surface rounded-xl border border-border p-4">
+                            <h4 className="text-xs font-mono uppercase tracking-wider text-muted mb-2">
+                              📚 Recommended Resources & Labs
+                            </h4>
+                            <div className="space-y-2">
+                              {note.recommendedResources.map((res, i) => (
+                                <a
+                                  key={i}
+                                  href={res.url}
+                                  target={res.url.startsWith("http") ? "_blank" : "_self"}
+                                  rel="noreferrer"
+                                  className="flex items-center justify-between p-2 bg-surface2 hover:bg-surface2/80 rounded-lg border border-border text-xs transition-colors group"
+                                >
+                                  <span className="text-ink font-medium group-hover:text-accent transition-colors truncate">
+                                    {res.title}
+                                  </span>
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface border border-border text-muted shrink-0 ml-2">
+                                    {res.type} ↗
+                                  </span>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </motion.div>
           )}
 

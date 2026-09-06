@@ -110,11 +110,14 @@ export default function Header() {
         </div>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-5">
+        <nav className="hidden md:flex items-center gap-4">
           <Link href="/tracks" className="text-sm text-muted hover:text-accent transition-colors">Tracks</Link>
           <Link href="/mentors" className="text-sm text-muted hover:text-accent transition-colors">Mentors</Link>
           <Link href="/interns" className="text-sm text-muted hover:text-accent transition-colors">Interns</Link>
           <Link href="/consultations" className="text-sm text-muted hover:text-accent transition-colors">Consultations</Link>
+          <Link href="/assessment" className="text-sm text-muted hover:text-accent transition-colors font-medium">Assessment</Link>
+          <Link href="/roadmap" className="text-sm text-muted hover:text-accent transition-colors font-medium">Roadmap</Link>
+          <Link href="/verify" className="text-sm text-muted hover:text-accent transition-colors">Verify</Link>
           <Link href="/labs" className="text-sm text-muted hover:text-accent transition-colors">Labs</Link>
           {session && (
             <Link href={dashboardHref} className="relative text-sm text-muted hover:text-accent transition-colors">
@@ -240,6 +243,9 @@ export default function Header() {
           <Link onClick={() => setMenuOpen(false)} href="/mentors" className="block text-sm text-muted hover:text-accent transition-colors py-1">Mentors</Link>
           <Link onClick={() => setMenuOpen(false)} href="/interns" className="block text-sm text-muted hover:text-accent transition-colors py-1">Interns</Link>
           <Link onClick={() => setMenuOpen(false)} href="/consultations" className="block text-sm text-muted hover:text-accent transition-colors py-1">Consultations</Link>
+          <Link onClick={() => setMenuOpen(false)} href="/assessment" className="block text-sm text-muted hover:text-accent transition-colors py-1 font-medium">Assessment</Link>
+          <Link onClick={() => setMenuOpen(false)} href="/roadmap" className="block text-sm text-muted hover:text-accent transition-colors py-1 font-medium">Roadmap</Link>
+          <Link onClick={() => setMenuOpen(false)} href="/verify" className="block text-sm text-muted hover:text-accent transition-colors py-1">Verify</Link>
           <Link onClick={() => setMenuOpen(false)} href="/labs" className="block text-sm text-muted hover:text-accent transition-colors py-1">Labs</Link>
           {session ? (
             <Link onClick={() => setMenuOpen(false)} href={dashboardHref} className="block text-sm text-ink hover:text-accent py-1">

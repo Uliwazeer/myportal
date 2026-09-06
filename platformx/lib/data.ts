@@ -1309,5 +1309,228 @@ export const stats = [
   { label: "Registered Learners", value: 0, mono: "learners_total" },
   { label: "Completed Labs", value: 0, mono: "labs_completed" },
   { label: "Shipped Projects", value: 0, mono: "projects_shipped" },
-  { label: "Active Mentors", value: 4, mono: "mentors_active" },
+  { label: "Active Mentors", value: 7, mono: "mentors_active" },
 ];
+
+// ─── Skill Assessment Engine Data ─────────────────────────────────────────────
+
+export type AssessmentQuestion = {
+  id: string;
+  trackSlug: string;
+  trackName: string;
+  category: string; // e.g. "Linux & OS", "Containers", "Networking", "Architecture", "Security"
+  question: string;
+  scenario?: string;
+  options: {
+    label: string;
+    points: number; // 0 to 25
+    level: "Beginner" | "Intermediate" | "Advanced" | "Expert";
+  }[];
+};
+
+export const assessmentQuestions: AssessmentQuestion[] = [
+  // ── DevOps & Platform Engineering ──
+  {
+    id: "q-devops-01",
+    trackSlug: "devops-engineer",
+    trackName: "DevOps Engineer",
+    category: "Linux & CLI Automation",
+    question: "How do you analyze a server experiencing high I/O wait and memory swapping?",
+    options: [
+      { label: "Restart the server and see if it recovers.", points: 5, level: "Beginner" },
+      { label: "Check 'top' and 'free -m' for high CPU and RAM usage.", points: 15, level: "Intermediate" },
+      { label: "Use 'iostat -xz 1', 'vmstat 1', 'dstat', and trace disk-heavy PIDs with 'iotop'.", points: 25, level: "Advanced" },
+      { label: "Use eBPF tools (biosnoop, biolatency) to trace block layer queuing latency.", points: 25, level: "Expert" },
+    ],
+  },
+  {
+    id: "q-devops-02",
+    trackSlug: "devops-engineer",
+    trackName: "DevOps Engineer",
+    category: "Docker & Containerization",
+    question: "What is your approach to securing and minimizing production container images?",
+    options: [
+      { label: "Use standard ubuntu:latest base image and run commands as root.", points: 5, level: "Beginner" },
+      { label: "Use alpine base images and clean package caches.", points: 15, level: "Intermediate" },
+      { label: "Multi-stage builds, distroless/scratch bases, non-root user (USER 10001), and Trivy scan in CI.", points: 25, level: "Advanced" },
+      { label: "Signed Chainguard images, cosign verification, and read-only root filesystems with seccomp profiles.", points: 25, level: "Expert" },
+    ],
+  },
+  {
+    id: "q-devops-03",
+    trackSlug: "devops-engineer",
+    trackName: "DevOps Engineer",
+    category: "Kubernetes Orchestration",
+    question: "How do you manage zero-downtime rolling updates and graceful termination in Kubernetes?",
+    options: [
+      { label: "Delete old pods manually after deploying new ones.", points: 5, level: "Beginner" },
+      { label: "Set standard maxSurge and maxUnavailable in Deployment specs.", points: 15, level: "Intermediate" },
+      { label: "Configure readiness/liveness probes, preStop lifecycle hooks, and PodDisruptionBudgets (PDB).", points: 25, level: "Advanced" },
+      { label: "Argo Rollouts with automated Canary analysis via Prometheus metrics and instant rollbacks.", points: 25, level: "Expert" },
+    ],
+  },
+  {
+    id: "q-platform-01",
+    trackSlug: "platform-engineer",
+    trackName: "Platform Engineer",
+    category: "GitOps & Infrastructure as Code",
+    question: "How do you orchestrate multi-cluster GitOps and state drift remediation?",
+    options: [
+      { label: "Apply kubectl manifests directly on each cluster from local terminal.", points: 5, level: "Beginner" },
+      { label: "Run GitHub Actions with 'helm upgrade' scripts per environment.", points: 15, level: "Intermediate" },
+      { label: "ArgoCD ApplicationSets with Kustomize overlays and automated sync/self-heal enabled.", points: 25, level: "Advanced" },
+      { label: "Crossplane + ArgoCD for unified cloud resource and cluster lifecycle management as code.", points: 25, level: "Expert" },
+    ],
+  },
+
+  // ── Backend Engineering ──
+  {
+    id: "q-backend-01",
+    trackSlug: "backend-engineer",
+    trackName: "Backend Engineer",
+    category: "Database & Query Optimization",
+    question: "How do you address database connection pool exhaustion under sudden traffic spikes?",
+    options: [
+      { label: "Increase max connection pool limit until server memory runs out.", points: 5, level: "Beginner" },
+      { label: "Add index to slow queries and increase server RAM.", points: 15, level: "Intermediate" },
+      { label: "Introduce PgBouncer for connection multiplexing, Redis caching for hot reads, and read replicas.", points: 25, level: "Advanced" },
+      { label: "Distributed rate limiting, event-driven queueing with Kafka/RabbitMQ, and circuit breaker patterns.", points: 25, level: "Expert" },
+    ],
+  },
+  {
+    id: "q-backend-02",
+    trackSlug: "backend-engineer",
+    trackName: "Backend Engineer",
+    category: "API Architecture & Security",
+    question: "What is your strategy for resilient microservices communication?",
+    options: [
+      { label: "Direct synchronous HTTP calls with no retries or timeouts.", points: 5, level: "Beginner" },
+      { label: "HTTP calls with timeout limits and try/catch blocks.", points: 15, level: "Intermediate" },
+      { label: "gRPC for internal services, asynchronous message broker for side effects, and exponential retry with jitter.", points: 25, level: "Advanced" },
+      { label: "Service mesh with mutual TLS (mTLS), distributed tracing (OpenTelemetry), and bulkhead isolation.", points: 25, level: "Expert" },
+    ],
+  },
+
+  // ── Cyber Security ──
+  {
+    id: "q-security-01",
+    trackSlug: "cyber-security",
+    trackName: "Cyber Security Specialist",
+    category: "Web & Infrastructure Hardening",
+    question: "How do you mitigate Server-Side Request Forgery (SSRF) in cloud environments?",
+    options: [
+      { label: "Validate that the user input starts with http://.", points: 5, level: "Beginner" },
+      { label: "Blacklist 127.0.0.1 and localhost strings in the input.", points: 15, level: "Intermediate" },
+      { label: "Enforce strict URL allowlisting, resolve DNS to block private IP ranges (RFC 1918), and enforce IMDSv2 on AWS.", points: 25, level: "Advanced" },
+      { label: "Network-level egress proxy with mTLS and IAM role-based least privilege per workload.", points: 25, level: "Expert" },
+    ],
+  },
+
+  // ── Frontend Engineering ──
+  {
+    id: "q-frontend-01",
+    trackSlug: "frontend-engineer",
+    trackName: "Frontend Engineer",
+    category: "Performance & Modern Web Architecture",
+    question: "How do you optimize Core Web Vitals (LCP, INP, CLS) in a large React/Next.js application?",
+    options: [
+      { label: "Compress all images manually with an online tool.", points: 5, level: "Beginner" },
+      { label: "Use next/image and lazy load components with React.lazy.", points: 15, level: "Intermediate" },
+      { label: "Route-level code splitting, priority asset preloading, server components (RSC), and strict CSS aspect-ratio reservations.", points: 25, level: "Advanced" },
+      { label: "Edge SSR rendering, streaming HTML with Suspense, web worker offloading, and bundle tree shaking audit.", points: 25, level: "Expert" },
+    ],
+  },
+];
+
+// ─── Session Notes & Homework Action Items ────────────────────────────────────
+
+export type HomeworkItem = {
+  id: string;
+  task: string;
+  completed: boolean;
+  dueDate?: string;
+};
+
+export type SessionNote = {
+  id: string;
+  bookingId: string;
+  mentorId: string;
+  mentorName: string;
+  userId: string;
+  userName: string;
+  date: string;
+  topicsDiscussed: string[];
+  homework: HomeworkItem[];
+  nextSessionFocus: string;
+  mentorAdvice: string;
+  recommendedResources: { title: string; url: string; type: "Lab" | "Doc" | "Repo" }[];
+  updatedAt: string;
+};
+
+// ─── Badges & Public Credentials ──────────────────────────────────────────────
+
+export type Badge = {
+  id: string;
+  title: string;
+  icon: string;
+  desc: string;
+  category: "mentor" | "intern" | "achievement";
+  unlockedAt?: string;
+};
+
+export type VerifiedCertificate = {
+  code: string; // e.g. "MP-CERT-2026-AW01"
+  studentName: string;
+  studentEmail: string;
+  trackName: string;
+  mentorName: string;
+  mentorTitle: string;
+  issueDate: string;
+  score: number; // percentage
+  status: "verified" | "revoked";
+  skillsMastered: string[];
+  finalProjectTitle: string;
+};
+
+export const sampleCertificates: VerifiedCertificate[] = [
+  {
+    code: "MP-CERT-2026-AW01",
+    studentName: "Ahmed Mahmoud",
+    studentEmail: "ahmed.mahmoud@example.com",
+    trackName: "Platform Engineering",
+    mentorName: "Ali Wazeer",
+    mentorTitle: "Senior Platform Engineer",
+    issueDate: "Aug 2026",
+    score: 96,
+    status: "verified",
+    skillsMastered: ["Kubernetes", "ArgoCD", "GitOps", "Prometheus & Grafana", "Terraform"],
+    finalProjectTitle: "Production-grade Multi-Cluster GitOps Platform with ArgoCD & Cilium",
+  },
+  {
+    code: "MP-CERT-2026-CH02",
+    studentName: "Youssef Ibrahim",
+    studentEmail: "youssef.ibrahim@example.com",
+    trackName: "Backend Engineering",
+    mentorName: "Charles",
+    mentorTitle: "Senior Backend Engineer",
+    issueDate: "Jul 2026",
+    score: 94,
+    status: "verified",
+    skillsMastered: ["Node.js", "GraphQL", "PostgreSQL", "Redis", "Kafka", "Docker"],
+    finalProjectTitle: "High-Throughput Distributed Payment & Auth Microservices",
+  },
+  {
+    code: "MP-CERT-2026-XL03",
+    studentName: "Omar Kamal",
+    studentEmail: "omar.kamal@example.com",
+    trackName: "Cyber Security Specialist",
+    mentorName: "XiLie",
+    mentorTitle: "Cyber Security Specialist",
+    issueDate: "Aug 2026",
+    score: 98,
+    status: "verified",
+    skillsMastered: ["Penetration Testing", "OWASP Hardening", "Burp Suite", "Cloud Security", "SIEM"],
+    finalProjectTitle: "End-to-End Enterprise Network Security Audit & Zero-Trust Architecture",
+  },
+];
+
