@@ -442,6 +442,50 @@ function getInitialData(): DbSchema {
   };
 }
 
+let inMemoryDb: DbSchema | null = null;
+
+// Cloud DB credentials from environment (Upstash Redis / Vercel KV / Supabase)
+const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+
+async function fetchFromCloudKv(): Promise<DbSchema | null> {
+  if (!KV_URL || !KV_TOKEN) return null;
+  try {
+    const res = await fetch(`${KV_URL}/get/platformx_db`, {
+      headers: { Authorization: `Bearer ${KV_TOKEN}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.result) {
+      const parsed = typeof json.result === "string" ? JSON.parse(json.result) : json.result;
+      return parsed as DbSchema;
+    }
+  } catch (e) {
+    console.warn("Cloud KV read failed, falling back to local store:", e);
+  }
+  return null;
+}
+
+async function saveToCloudKv(data: DbSchema): Promise<boolean> {
+  if (!KV_URL || !KV_TOKEN) return false;
+  try {
+    const res = await fetch(`${KV_URL}/set/platformx_db`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${KV_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(JSON.stringify(data)),
+      cache: "no-store",
+    });
+    return res.ok;
+  } catch (e) {
+    console.warn("Cloud KV write failed:", e);
+    return false;
+  }
+}
+
 function ensureDbFile(): void {
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) {
@@ -454,6 +498,7 @@ function ensureDbFile(): void {
 }
 
 export function readDb(): DbSchema {
+  if (inMemoryDb) return inMemoryDb;
   try {
     ensureDbFile();
     const content = fs.readFileSync(DB_PATH, "utf8");
@@ -464,20 +509,105 @@ export function readDb(): DbSchema {
     if (!data.notifications) data.notifications = [];
     if (!data.activities) data.activities = [];
     if (!data.events) data.events = [];
+    inMemoryDb = data;
     return data;
   } catch (err) {
     console.error("Error reading database:", err);
-    return getInitialData();
+    inMemoryDb = getInitialData();
+    return inMemoryDb;
   }
 }
 
+export async function readDbAsync(): Promise<DbSchema> {
+  const cloudData = await fetchFromCloudKv();
+  if (cloudData) {
+    inMemoryDb = cloudData;
+    return cloudData;
+  }
+  return readDb();
+}
+
 export function writeDb(data: DbSchema): void {
+  inMemoryDb = data;
   try {
     ensureDbFile();
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), "utf8");
   } catch (err) {
-    console.error("Error writing database:", err);
+    console.error("Error writing database to disk:", err);
   }
+  // Also write to cloud asynchronously if configured
+  if (KV_URL && KV_TOKEN) {
+    saveToCloudKv(data).catch((e) => console.error("Async Cloud KV save error:", e));
+  }
+}
+
+export async function writeDbAsync(data: DbSchema): Promise<void> {
+  writeDb(data);
+  await saveToCloudKv(data);
+}
+
+// ─── Smart Merge (Guarantees no accounts or bookings are ever deleted) ────────
+export async function dbMergeData(incoming: Partial<DbSchema>): Promise<DbSchema> {
+  const current = await readDbAsync();
+
+  // 1. Merge users
+  if (incoming.users && Array.isArray(incoming.users)) {
+    for (const u of incoming.users) {
+      const idx = current.users.findIndex(
+        (cu) => cu.id === u.id || cu.email.toLowerCase() === u.email.toLowerCase()
+      );
+      if (idx >= 0) {
+        current.users[idx] = { ...current.users[idx], ...u };
+      } else {
+        current.users.push(u);
+      }
+    }
+  }
+
+  // 2. Merge bookings
+  if (incoming.bookings && Array.isArray(incoming.bookings)) {
+    for (const b of incoming.bookings) {
+      const idx = current.bookings.findIndex((cb) => cb.id === b.id);
+      if (idx >= 0) {
+        current.bookings[idx] = { ...current.bookings[idx], ...b };
+      } else {
+        current.bookings.push(b);
+      }
+    }
+  }
+
+  // 3. Merge reviews
+  if (incoming.reviews && Array.isArray(incoming.reviews)) {
+    for (const r of incoming.reviews) {
+      const idx = current.reviews.findIndex((cr) => cr.id === r.id);
+      if (idx >= 0) {
+        current.reviews[idx] = { ...current.reviews[idx], ...r };
+      } else {
+        current.reviews.push(r);
+      }
+    }
+  }
+
+  // 4. Merge notifications
+  if (incoming.notifications && Array.isArray(incoming.notifications)) {
+    for (const n of incoming.notifications) {
+      if (!current.notifications.some((cn) => cn.id === n.id)) {
+        current.notifications.push(n);
+      }
+    }
+  }
+
+  // 5. Merge activities
+  if (incoming.activities && Array.isArray(incoming.activities)) {
+    for (const a of incoming.activities) {
+      if (!current.activities.some((ca) => ca.id === a.id)) {
+        current.activities.push(a);
+      }
+    }
+  }
+
+  await writeDbAsync(current);
+  return current;
 }
 
 // ─── Users CRUD ───────────────────────────────────────────────

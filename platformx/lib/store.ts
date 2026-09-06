@@ -322,14 +322,32 @@ function generateId(): string {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
 
-// ─── Realtime Server Sync ─────────────────────────────────────
+// ─── Realtime Server & Cloud Database Sync ────────────────────
 let isSyncing = false;
 
 export async function syncWithServer(): Promise<void> {
   if (typeof window === "undefined" || isSyncing) return;
   isSyncing = true;
   try {
-    const res = await fetch("/api/data", { cache: "no-store" });
+    const localUsers = getItem<UserProfile>("px_users", []);
+    const localBookings = getItem<Booking>("px_bookings", []);
+    const localReviews = getItem<Review>("px_reviews", []);
+    const localNotifications = getItem<Notification>("px_notifications", []);
+
+    const res = await fetch("/api/data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientData: {
+          users: localUsers,
+          bookings: localBookings,
+          reviews: localReviews,
+          notifications: localNotifications,
+        },
+      }),
+      cache: "no-store",
+    });
+
     if (res.ok) {
       const json = await res.json();
       if (json.ok && json.data) {
