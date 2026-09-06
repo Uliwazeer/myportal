@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { mentors as staticMentors, tracks, levels } from "@/lib/data";
-import { getAllMentors } from "@/lib/store";
+import { getAllMentors, syncWithServer } from "@/lib/store";
 import type { MentorData } from "@/lib/data";
 
 export default function MentorsPage() {
-  const [mentorList, setMentorList] = useState<MentorData[]>(staticMentors);
+  const [mentorList, setMentorList] = useState<MentorData[]>([]);
   const [search, setSearch] = useState("");
   const [filterTrack, setFilterTrack] = useState("all");
   const [filterLevel, setFilterLevel] = useState("all");
@@ -16,6 +16,9 @@ export default function MentorsPage() {
 
   useEffect(() => {
     setMentorList(getAllMentors());
+    syncWithServer().then(() => {
+      setMentorList(getAllMentors());
+    });
   }, []);
 
   const filtered = mentorList.filter((m) => {

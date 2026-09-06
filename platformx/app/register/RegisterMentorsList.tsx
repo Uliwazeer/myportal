@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getAllMentors, getAllTracks } from "@/lib/store";
+import { getAllMentors, getAllTracks, syncWithServer } from "@/lib/store";
 import type { MentorData, Track } from "@/lib/data";
 
 export default function RegisterMentorsList() {
@@ -12,6 +12,10 @@ export default function RegisterMentorsList() {
   useEffect(() => {
     setMentors(getAllMentors());
     setTracks(getAllTracks());
+    syncWithServer().then(() => {
+      setMentors(getAllMentors());
+      setTracks(getAllTracks());
+    });
   }, []);
 
   return (

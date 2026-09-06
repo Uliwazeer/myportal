@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getSession, clearSession, getBookingsByUser, getUnreadCount, markNotificationsRead, getNotifications, cancelBookingByIntern, getAllMentors, syncWithServer } from "@/lib/store";
 import { motion } from "framer-motion";
-import { getSession, clearSession, getBookingsByUser, getUnreadCount, markNotificationsRead, getNotifications, cancelBookingByIntern, getAllMentors } from "@/lib/store";
 import { mentors as staticMentors, tracks } from "@/lib/data";
 import type { UserProfile, Booking, Notification, MentorData } from "@/lib/data";
 
@@ -19,7 +19,7 @@ export default function ConsultationDashboard() {
   const router = useRouter();
   const [session, setSession] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
-  const [mentors, setMentors] = useState<MentorData[]>(staticMentors);
+  const [mentors, setMentors] = useState<MentorData[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [unread, setUnread] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -33,6 +33,13 @@ export default function ConsultationDashboard() {
     setBookings(getBookingsByUser(s.id));
     setUnread(getUnreadCount(s.id));
     setNotifications(getNotifications(s.id));
+
+    syncWithServer().then(() => {
+      setMentors(getAllMentors());
+      setBookings(getBookingsByUser(s.id));
+      setUnread(getUnreadCount(s.id));
+      setNotifications(getNotifications(s.id));
+    });
   }, [router]);
 
   function handleLogout() { clearSession(); router.push("/"); }

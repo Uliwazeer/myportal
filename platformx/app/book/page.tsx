@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { tracks as staticTracks, mentors as staticMentors, levels, sessionTypes } from "@/lib/data";
-import { getSession, saveBooking, addNotification, getAllMentors, getAllTracks } from "@/lib/store";
+import { getSession, saveBooking, addNotification, getAllMentors, getAllTracks, syncWithServer } from "@/lib/store";
 import type { Level, Track, MentorData, SessionType } from "@/lib/data";
 import toast, { Toaster } from "react-hot-toast";
 
@@ -57,8 +57,8 @@ function BookContent() {
   const [session, setSession] = useState<ReturnType<typeof getSession>>(null);
   const [booked, setBooked] = useState(false);
 
-  const [allMentors, setAllMentors] = useState<MentorData[]>(staticMentors);
-  const [allTracks, setAllTracks] = useState<Track[]>(staticTracks);
+  const [allMentors, setAllMentors] = useState<MentorData[]>([]);
+  const [allTracks, setAllTracks] = useState<Track[]>([]);
 
   useEffect(() => {
     const s = getSession();
@@ -77,6 +77,13 @@ function BookContent() {
         setSelectedTrack(targetMentor.tracks[0]);
       }
     }
+
+    syncWithServer().then(() => {
+      const updatedMList = getAllMentors();
+      const updatedTList = getAllTracks();
+      setAllMentors(updatedMList);
+      setAllTracks(updatedTList);
+    });
   }, [router, searchParams]);
 
   const filteredMentors = selectedTrack

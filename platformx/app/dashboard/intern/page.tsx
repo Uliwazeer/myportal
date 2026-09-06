@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { getSession, clearSession, getBookingsByUser, getNotifications, markNotificationsRead, getUnreadCount, getUsers, cancelBookingByIntern, getAllMentors, getAllTracks } from "@/lib/store";
+import { getSession, clearSession, getBookingsByUser, getNotifications, markNotificationsRead, getUnreadCount, getUsers, cancelBookingByIntern, getAllMentors, getAllTracks, syncWithServer } from "@/lib/store";
 import { mentors as staticMentors, tracks } from "@/lib/data";
 import type { UserProfile, Booking, MentorData, Track } from "@/lib/data";
 
@@ -20,8 +20,8 @@ export default function InternDashboard() {
   const router = useRouter();
   const [session, setSession] = useState<UserProfile | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
-  const [mentors, setMentors] = useState<MentorData[]>(staticMentors);
-  const [allTracksList, setAllTracksList] = useState<Track[]>(tracks);
+  const [mentors, setMentors] = useState<MentorData[]>([]);
+  const [allTracksList, setAllTracksList] = useState<Track[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [unread, setUnread] = useState(0);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -35,6 +35,17 @@ export default function InternDashboard() {
     setAllTracksList(getAllTracks());
     setBookings(getBookingsByUser(s.id));
     setUnread(getUnreadCount(s.id));
+
+    syncWithServer().then(() => {
+      const updatedS = getSession();
+      if (updatedS) {
+        setSession(updatedS);
+        setMentors(getAllMentors());
+        setAllTracksList(getAllTracks());
+        setBookings(getBookingsByUser(updatedS.id));
+        setUnread(getUnreadCount(updatedS.id));
+      }
+    });
   }, [router]);
 
   function handleLogout() {

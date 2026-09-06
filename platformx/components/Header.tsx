@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import { tracks, mentors } from "@/lib/data";
-import { getSession, getUnreadCount } from "@/lib/store";
-import type { UserProfile } from "@/lib/data";
+import { getAllMentors, getAllTracks, getSession, getUnreadCount, syncWithServer } from "@/lib/store";
+import type { UserProfile, MentorData, Track } from "@/lib/data";
 
 export default function Header() {
   const router = useRouter();
@@ -14,12 +13,24 @@ export default function Header() {
   const [query, setQuery] = useState("");
   const [session, setSession] = useState<UserProfile | null>(null);
   const [unread, setUnread] = useState(0);
+  const [mentorsList, setMentorsList] = useState<MentorData[]>([]);
+  const [tracksList, setTracksList] = useState<Track[]>([]);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const s = getSession();
     setSession(s);
     if (s) setUnread(getUnreadCount(s.id));
+    setMentorsList(getAllMentors());
+    setTracksList(getAllTracks());
+
+    syncWithServer().then(() => {
+      setMentorsList(getAllMentors());
+      setTracksList(getAllTracks());
+      const updatedS = getSession();
+      setSession(updatedS);
+      if (updatedS) setUnread(getUnreadCount(updatedS.id));
+    });
   }, []);
 
   useEffect(() => {
@@ -28,10 +39,10 @@ export default function Header() {
 
   const results = query.trim().length > 0
     ? [
-        ...tracks
+        ...tracksList
           .filter((t) => t.name.toLowerCase().includes(query.toLowerCase()))
           .map((t) => ({ type: "Track", label: t.name, href: `/tracks/${t.slug}` })),
-        ...mentors
+        ...mentorsList
           .filter(
             (m) =>
               m.name.toLowerCase().includes(query.toLowerCase()) ||

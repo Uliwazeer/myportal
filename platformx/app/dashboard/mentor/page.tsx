@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { getSession, clearSession, getBookingsByMentor, getReviewsByMentor, getUnreadCount, markNotificationsRead, getNotifications, confirmBookingByMentor, declineBookingByMentor, getUsers } from "@/lib/store";
+import { getSession, clearSession, getBookingsByMentor, getReviewsByMentor, getUnreadCount, markNotificationsRead, getNotifications, confirmBookingByMentor, declineBookingByMentor, getUsers, syncWithServer } from "@/lib/store";
 import { tracks } from "@/lib/data";
 import type { UserProfile, Booking, Review, Notification } from "@/lib/data";
 
@@ -34,6 +34,17 @@ export default function MentorDashboard() {
     setReviews(getReviewsByMentor(s.id));
     setUnread(getUnreadCount(s.id));
     setNotifications(getNotifications(s.id));
+
+    syncWithServer().then(() => {
+      const updatedS = getSession();
+      if (updatedS) {
+        setSession(updatedS);
+        setBookings(getBookingsByMentor(updatedS.id));
+        setReviews(getReviewsByMentor(updatedS.id));
+        setUnread(getUnreadCount(updatedS.id));
+        setNotifications(getNotifications(updatedS.id));
+      }
+    });
   }, [router]);
 
   function handleLogout() { clearSession(); router.push("/"); }

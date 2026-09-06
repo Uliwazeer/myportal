@@ -4,8 +4,9 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { tracks, mentors, labs } from "@/lib/data";
-import { getAllMentors } from "@/lib/store";
+import { labs } from "@/lib/data";
+import { getAllMentors, getAllTracks, syncWithServer } from "@/lib/store";
+import type { MentorData, Track } from "@/lib/data";
 
 type ResultType = "Track" | "Mentor" | "Lab";
 type Result = { type: ResultType; label: string; sub: string; href: string };
@@ -13,17 +14,23 @@ type Result = { type: ResultType; label: string; sub: string; href: string };
 function SearchContent() {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") || "");
-  const [mentorsList, setMentorsList] = useState(mentors);
+  const [mentorsList, setMentorsList] = useState<MentorData[]>([]);
+  const [tracksList, setTracksList] = useState<Track[]>([]);
 
   useEffect(() => {
     setMentorsList(getAllMentors());
+    setTracksList(getAllTracks());
+    syncWithServer().then(() => {
+      setMentorsList(getAllMentors());
+      setTracksList(getAllTracks());
+    });
   }, []);
 
   const q = query.toLowerCase().trim();
 
   const results: Result[] = q
     ? [
-        ...tracks
+        ...tracksList
           .filter(
             (t) =>
               t.name.toLowerCase().includes(q) ||
