@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import StatusPanel from "@/components/StatusPanel";
@@ -7,8 +8,29 @@ import JourneyDiagram from "@/components/JourneyDiagram";
 import TrackCard from "@/components/TrackCard";
 import LabCard from "@/components/LabCard";
 import { tracks, labs } from "@/lib/data";
+import { getAllMentors, getBookings, getUsers, syncWithServer } from "@/lib/store";
+import type { MentorData, Booking, UserProfile } from "@/lib/data";
 
 export default function HomePage() {
+  const [mentorsList, setMentorsList] = useState<MentorData[]>([]);
+  const [bookingsList, setBookingsList] = useState<Booking[]>([]);
+  const [usersList, setUsersList] = useState<UserProfile[]>([]);
+
+  useEffect(() => {
+    setMentorsList(getAllMentors());
+    setBookingsList(getBookings());
+    setUsersList(getUsers());
+
+    syncWithServer().then(() => {
+      setMentorsList(getAllMentors());
+      setBookingsList(getBookings());
+      setUsersList(getUsers());
+    });
+  }, []);
+
+  const recentBookings = bookingsList.slice(-3).reverse();
+  const recentInterns = usersList.filter((u) => u.role === "intern").slice(-3).reverse();
+
   return (
     <>
       {/* Hero */}
@@ -33,10 +55,16 @@ export default function HomePage() {
                 Register Now
               </Link>
               <Link
-                href="/tracks"
+                href="/mentors"
                 className="rounded-md border border-border px-5 py-2.5 text-sm text-ink transition-colors hover:border-accent"
               >
-                Browse Tracks
+                Browse Mentors
+              </Link>
+              <Link
+                href="/consultations"
+                className="rounded-md border border-border bg-surface px-5 py-2.5 text-sm text-muted transition-colors hover:text-ink hover:border-border/80"
+              >
+                Consultations Registry
               </Link>
             </div>
           </motion.div>
@@ -48,6 +76,122 @@ export default function HomePage() {
           >
             <StatusPanel />
           </motion.div>
+        </div>
+      </section>
+
+      {/* Live Consultations & Interns Registry Highlight */}
+      <section className="border-t border-border bg-surface/30 py-16">
+        <div className="mx-auto max-w-content px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Consultations Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="rounded-2xl border border-border bg-surface p-6 flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+                    <h3 className="font-bold text-ink text-lg">Recent Consultations</h3>
+                  </div>
+                  <Link href="/consultations" className="text-xs font-mono text-accent hover:underline">
+                    View All ({bookingsList.length}) →
+                  </Link>
+                </div>
+                <p className="text-xs text-muted mb-4">
+                  Latest 1-on-1 technical sessions booked with senior experts across cloud, platform, and backend engineering.
+                </p>
+
+                <div className="space-y-3">
+                  {recentBookings.map((b) => {
+                    const client = usersList.find((u) => u.id === b.userId);
+                    const mentor = mentorsList.find((m) => m.id === b.mentorId);
+                    return (
+                      <div key={b.id} className="p-3 rounded-xl bg-surface2 border border-border/60 flex items-center justify-between text-xs">
+                        <div>
+                          <p className="font-semibold text-ink">{client?.name || "Client"}</p>
+                          <p className="text-muted text-[11px] truncate max-w-[200px]">
+                            {b.topic || b.trackSlug}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-accent font-medium">{mentor?.name || b.mentorId}</p>
+                          <p className="text-muted font-mono text-[10px]">📅 {b.date}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
+                <span className="text-xs text-muted">Need technical advice?</span>
+                <Link
+                  href="/book"
+                  className="rounded-lg bg-accent/15 border border-accent/30 text-accent hover:bg-accent hover:text-white px-3 py-1.5 text-xs font-semibold transition-colors"
+                >
+                  Book a Consultation
+                </Link>
+              </div>
+            </motion.div>
+
+            {/* Interns Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="rounded-2xl border border-border bg-surface p-6 flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                    <h3 className="font-bold text-ink text-lg">Enrolled Interns</h3>
+                  </div>
+                  <Link href="/interns" className="text-xs font-mono text-accent hover:underline">
+                    View All ({usersList.filter((u) => u.role === "intern").length}) →
+                  </Link>
+                </div>
+                <p className="text-xs text-muted mb-4">
+                  Learners undergoing structured hands-on apprenticeships with assigned dedicated mentors.
+                </p>
+
+                <div className="space-y-3">
+                  {recentInterns.map((intern) => {
+                    const mentor = mentorsList.find((m) => m.id === intern.mentorId);
+                    const trackObj = tracks.find((t) => t.slug === intern.trackSlug);
+                    return (
+                      <div key={intern.id} className="p-3 rounded-xl bg-surface2 border border-border/60 flex items-center justify-between text-xs">
+                        <div>
+                          <p className="font-semibold text-ink">{intern.name}</p>
+                          <p className="text-muted text-[11px]">
+                            🚀 {trackObj?.name || intern.trackSlug || "Track"}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-accent font-medium">Mentor: {mentor?.name || "Assigned"}</p>
+                          <p className="text-muted font-mono text-[10px]">Level: {intern.level || "Junior"}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
+                <span className="text-xs text-muted">Want to level up your engineering skills?</span>
+                <Link
+                  href="/register?role=intern"
+                  className="rounded-lg bg-accent px-3 py-1.5 text-xs text-white font-semibold hover:opacity-90 transition-opacity"
+                >
+                  Apply for Internship
+                </Link>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 

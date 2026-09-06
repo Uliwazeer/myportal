@@ -3,6 +3,7 @@ import { Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
 import { Toaster } from "react-hot-toast";
 
 const inter = Inter({
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" dir="ltr" className={`${inter.variable} ${plexMono.variable}`}>
       <body className="flex min-h-screen flex-col font-sans bg-bg text-ink">
+        <AnalyticsTracker />
         <Toaster
           position="top-center"
           toastOptions={{

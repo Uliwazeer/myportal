@@ -7,7 +7,12 @@ export default function Footer() {
         <p className="whitespace-nowrap">
           Copyright &copy; 2026 Mentorship Platform Inc. All rights reserved.
         </p>
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center gap-4 md:gap-6">
+          <Link href="/tracks" className="hover:text-ink transition-colors">Tracks</Link>
+          <Link href="/mentors" className="hover:text-ink transition-colors">Mentors</Link>
+          <Link href="/interns" className="hover:text-ink transition-colors">Interns</Link>
+          <Link href="/consultations" className="hover:text-ink transition-colors">Consultations</Link>
+          <Link href="/labs" className="hover:text-ink transition-colors">Labs</Link>
           <Link
             href="/privacy"
             className="hover:text-ink transition-colors underline-offset-4 hover:underline"

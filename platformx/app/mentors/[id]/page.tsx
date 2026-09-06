@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { tracks } from "@/lib/data";
-import { getReviewsByMentor, getSession, saveReview, getMentorById, getAllTracks } from "@/lib/store";
+import { getReviewsByMentor, getSession, saveReview, getMentorById, getAllTracks, syncWithServer } from "@/lib/store";
 import type { Review, UserProfile, MentorData } from "@/lib/data";
 
 export default function MentorProfilePage() {
@@ -21,14 +21,19 @@ export default function MentorProfilePage() {
   const [submitting, setSubmitting] = useState(false);
   const [hoverRating, setHoverRating] = useState(0);
 
-  useEffect(() => {
+  function loadMentorData() {
     const found = getMentorById(id);
     setMentor(found);
     if (found) {
       setReviews(getReviewsByMentor(found.id));
     }
+  }
+
+  useEffect(() => {
+    loadMentorData();
     setSession(getSession());
     setLoading(false);
+    syncWithServer().then(loadMentorData);
   }, [id]);
 
   if (loading) {

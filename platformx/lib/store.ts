@@ -1,16 +1,315 @@
-// ─── localStorage Store Helpers ───────────────────────────────
-// All data is stored in localStorage for demo mode.
-// Keys: px_users, px_bookings, px_reviews, px_notifications, px_session
+// ─── Global Store with Server-Side Persistence & Client Sync ───
+// Data is stored centrally in the server database (data/db.json)
+// and cached in localStorage for instant offline/low-latency client access.
 
 import type { UserProfile, Booking, Review, Notification } from "./data";
 
+// Initial fallback seeds in case localStorage is empty before first server sync
+const DEFAULT_SEED_USERS: UserProfile[] = [
+  {
+    id: "intern-1",
+    name: "Ahmed Mahmoud",
+    email: "ahmed.mahmoud@example.com",
+    phone: "+201011112222",
+    role: "intern",
+    university: "Cairo University — Computer Engineering",
+    level: "Junior",
+    trackSlug: "platform-engineer",
+    mentorId: "ali-wazeer",
+    createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+    progress: 85,
+  },
+  {
+    id: "intern-2",
+    name: "Youssef Ibrahim",
+    email: "youssef.ibrahim@example.com",
+    phone: "+201033334444",
+    role: "intern",
+    university: "Ain Shams University",
+    level: "Mid-Level",
+    trackSlug: "backend-engineer",
+    mentorId: "charles",
+    createdAt: new Date(Date.now() - 25 * 86400000).toISOString(),
+    progress: 90,
+  },
+  {
+    id: "intern-3",
+    name: "Omar Kamal",
+    email: "omar.kamal@example.com",
+    phone: "+201055556666",
+    role: "intern",
+    university: "Helwan University — Cybersecurity",
+    level: "Junior",
+    trackSlug: "cyber-security",
+    mentorId: "xilie",
+    createdAt: new Date(Date.now() - 20 * 86400000).toISOString(),
+    progress: 75,
+  },
+  {
+    id: "intern-4",
+    name: "Salma Saeed",
+    email: "salma.saeed@example.com",
+    phone: "+201077778888",
+    role: "intern",
+    university: "Alexandria University",
+    level: "Junior",
+    trackSlug: "cyber-security",
+    mentorId: "xilie",
+    createdAt: new Date(Date.now() - 15 * 86400000).toISOString(),
+    progress: 100,
+  },
+  {
+    id: "intern-5",
+    name: "Ziad Fathi",
+    email: "ziad.fathi@example.com",
+    phone: "+201099990000",
+    role: "intern",
+    university: "Mansoura University",
+    level: "Mid-Level",
+    trackSlug: "devops-engineer",
+    mentorId: "sajid",
+    createdAt: new Date(Date.now() - 12 * 86400000).toISOString(),
+    progress: 60,
+  },
+  {
+    id: "intern-6",
+    name: "Hany Mansour",
+    email: "hany.mansour@example.com",
+    phone: "+201112223344",
+    role: "intern",
+    university: "GUC (German University in Cairo)",
+    level: "Senior",
+    trackSlug: "platform-engineer",
+    mentorId: "waleed-gharieb",
+    createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+    progress: 70,
+  },
+  {
+    id: "intern-7",
+    name: "Mariam Lotfy",
+    email: "mariam.lotfy@example.com",
+    phone: "+201133335555",
+    role: "intern",
+    university: "AUC (American University in Cairo)",
+    level: "Junior",
+    trackSlug: "platform-engineer",
+    mentorId: "ahmed-moustafa",
+    createdAt: new Date(Date.now() - 8 * 86400000).toISOString(),
+    progress: 80,
+  },
+  {
+    id: "intern-8",
+    name: "Yasmine Soliman",
+    email: "yasmine.soliman@example.com",
+    phone: "+201155557777",
+    role: "intern",
+    university: "Zagazig University",
+    level: "Junior",
+    trackSlug: "devops-engineer",
+    mentorId: "ahmed-gamal",
+    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+    progress: 45,
+  },
+  {
+    id: "client-1",
+    name: "Khaled Hassan",
+    email: "khaled.hassan@example.com",
+    phone: "+201211112233",
+    role: "consultation",
+    topic: "Kubernetes Cluster Ingress & SSL Troubleshooting",
+    createdAt: new Date(Date.now() - 28 * 86400000).toISOString(),
+  },
+  {
+    id: "client-2",
+    name: "Mohamed Samir",
+    email: "mohamed.samir@example.com",
+    phone: "+201233334455",
+    role: "consultation",
+    topic: "Microservices & Redis Caching Architecture",
+    createdAt: new Date(Date.now() - 22 * 86400000).toISOString(),
+  },
+  {
+    id: "client-3",
+    name: "Amr Nabil",
+    email: "amr.nabil@example.com",
+    phone: "+201255556677",
+    role: "consultation",
+    topic: "AWS Security Audit & IAM Policy Hardening",
+    createdAt: new Date(Date.now() - 18 * 86400000).toISOString(),
+  },
+  {
+    id: "client-4",
+    name: "Karim Tawfik",
+    email: "karim.tawfik@example.com",
+    phone: "+201277778899",
+    role: "consultation",
+    topic: "Linux Server Performance Tuning & Storage LVM",
+    createdAt: new Date(Date.now() - 14 * 86400000).toISOString(),
+  },
+  {
+    id: "client-5",
+    name: "Tarek Abdelrahman",
+    email: "tarek.abdelrahman@example.com",
+    phone: "+201299990011",
+    role: "consultation",
+    topic: "Infrastructure Automation & Multi-Cloud Terraform",
+    createdAt: new Date(Date.now() - 9 * 86400000).toISOString(),
+  },
+  {
+    id: "client-6",
+    name: "Kareem Fahmy",
+    email: "kareem.fahmy@example.com",
+    phone: "+201012345678",
+    role: "consultation",
+    topic: "Platform Strategy & IDP (Internal Developer Platform)",
+    createdAt: new Date(Date.now() - 6 * 86400000).toISOString(),
+  },
+  {
+    id: "client-7",
+    name: "Hassan Bakr",
+    email: "hassan.bakr@example.com",
+    phone: "+201098765432",
+    role: "consultation",
+    topic: "Linux Systems Patching & Ansible Automation",
+    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+  },
+];
+
+const DEFAULT_SEED_BOOKINGS: Booking[] = [
+  {
+    id: "MP-2026-104921",
+    userId: "client-1",
+    mentorId: "ali-wazeer",
+    trackSlug: "platform-engineer",
+    sessionType: "Consultation",
+    date: "2026-08-20",
+    time: "18:00",
+    duration: 60,
+    topic: "Kubernetes Cluster Ingress & SSL Troubleshooting",
+    status: "completed",
+    createdAt: new Date(Date.now() - 28 * 86400000).toISOString(),
+  },
+  {
+    id: "MP-2026-218492",
+    userId: "client-2",
+    mentorId: "charles",
+    trackSlug: "backend-engineer",
+    sessionType: "Technical Review",
+    date: "2026-08-24",
+    time: "19:00",
+    duration: 60,
+    topic: "Microservices & Redis Caching Architecture",
+    status: "completed",
+    createdAt: new Date(Date.now() - 22 * 86400000).toISOString(),
+  },
+  {
+    id: "MP-2026-339102",
+    userId: "client-3",
+    mentorId: "xilie",
+    trackSlug: "cyber-security",
+    sessionType: "Consultation",
+    date: "2026-08-28",
+    time: "20:00",
+    duration: 40,
+    topic: "AWS Security Audit & IAM Policy Hardening",
+    status: "completed",
+    createdAt: new Date(Date.now() - 18 * 86400000).toISOString(),
+  },
+  {
+    id: "MP-2026-442819",
+    userId: "client-4",
+    mentorId: "sajid",
+    trackSlug: "devops-engineer",
+    sessionType: "Consultation",
+    date: "2026-08-30",
+    time: "18:00",
+    duration: 40,
+    topic: "Linux Server Performance Tuning & Storage LVM",
+    status: "completed",
+    createdAt: new Date(Date.now() - 14 * 86400000).toISOString(),
+  },
+  {
+    id: "MP-2026-558291",
+    userId: "client-5",
+    mentorId: "waleed-gharieb",
+    trackSlug: "platform-engineer",
+    sessionType: "Consultation",
+    date: "2026-09-02",
+    time: "18:00",
+    duration: 60,
+    topic: "Infrastructure Automation & Multi-Cloud Terraform",
+    status: "completed",
+    createdAt: new Date(Date.now() - 9 * 86400000).toISOString(),
+  },
+  {
+    id: "MP-2026-667182",
+    userId: "client-6",
+    mentorId: "ahmed-moustafa",
+    trackSlug: "platform-engineer",
+    sessionType: "Career Guidance",
+    date: "2026-09-04",
+    time: "19:00",
+    duration: 60,
+    topic: "Platform Strategy & IDP (Internal Developer Platform)",
+    status: "completed",
+    createdAt: new Date(Date.now() - 6 * 86400000).toISOString(),
+  },
+  {
+    id: "MP-2026-778291",
+    userId: "client-7",
+    mentorId: "ahmed-gamal",
+    trackSlug: "devops-engineer",
+    sessionType: "Technical Review",
+    date: "2026-09-05",
+    time: "17:00",
+    duration: 40,
+    topic: "Linux Systems Patching & Ansible Automation",
+    status: "confirmed",
+    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
+  },
+  {
+    id: "MP-2026-889102",
+    userId: "intern-1",
+    mentorId: "ali-wazeer",
+    trackSlug: "platform-engineer",
+    sessionType: "Mentorship",
+    date: "2026-09-10",
+    time: "18:00",
+    duration: 60,
+    topic: "GitOps with ArgoCD & Multi-Cluster Sync",
+    status: "confirmed",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "MP-2026-991203",
+    userId: "intern-2",
+    mentorId: "charles",
+    trackSlug: "backend-engineer",
+    sessionType: "Mentorship",
+    date: "2026-09-12",
+    time: "19:00",
+    duration: 60,
+    topic: "GraphQL Subscriptions & Event-Driven Architecture",
+    status: "confirmed",
+    createdAt: new Date().toISOString(),
+  },
+];
+
 // ─── Helpers ──────────────────────────────────────────────────
-function getItem<T>(key: string): T[] {
-  if (typeof window === "undefined") return [];
+function getItem<T>(key: string, fallback: T[] = []): T[] {
+  if (typeof window === "undefined") return fallback;
   try {
-    return JSON.parse(localStorage.getItem(key) || "[]") as T[];
+    const raw = localStorage.getItem(key);
+    if (!raw) {
+      if (fallback.length > 0) {
+        localStorage.setItem(key, JSON.stringify(fallback));
+      }
+      return fallback;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? (parsed as T[]) : fallback;
   } catch {
-    return [];
+    return fallback;
   }
 }
 
@@ -23,9 +322,48 @@ function generateId(): string {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 }
 
+// ─── Realtime Server Sync ─────────────────────────────────────
+let isSyncing = false;
+
+export async function syncWithServer(): Promise<void> {
+  if (typeof window === "undefined" || isSyncing) return;
+  isSyncing = true;
+  try {
+    const res = await fetch("/api/data", { cache: "no-store" });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.ok && json.data) {
+        if (json.data.users && json.data.users.length > 0) {
+          setItem("px_users", json.data.users);
+        }
+        if (json.data.bookings && json.data.bookings.length > 0) {
+          setItem("px_bookings", json.data.bookings);
+        }
+        if (json.data.reviews && json.data.reviews.length > 0) {
+          setItem("px_reviews", json.data.reviews);
+        }
+        if (json.data.notifications && json.data.notifications.length > 0) {
+          setItem("px_notifications", json.data.notifications);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("Could not sync with server API (offline or building):", err);
+  } finally {
+    isSyncing = false;
+  }
+}
+
+// Auto-trigger sync on browser side
+if (typeof window !== "undefined") {
+  setTimeout(() => {
+    syncWithServer();
+  }, 100);
+}
+
 // ─── Users ────────────────────────────────────────────────────
 export function getUsers(): UserProfile[] {
-  return getItem<UserProfile>("px_users");
+  return getItem<UserProfile>("px_users", DEFAULT_SEED_USERS);
 }
 
 export function getUserByEmail(email: string): UserProfile | undefined {
@@ -231,6 +569,16 @@ export function saveUser(user: Omit<UserProfile, "id" | "createdAt">): UserProfi
     createdAt: new Date().toISOString(),
   };
   setItem("px_users", [...users, newUser]);
+
+  // Sync with server API asynchronously
+  if (typeof window !== "undefined") {
+    fetch("/api/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newUser),
+    }).catch((err) => console.error("Server user sync failed:", err));
+  }
+
   return newUser;
 }
 
@@ -264,7 +612,7 @@ function generateBookingId(): string {
 
 // ─── Bookings ─────────────────────────────────────────────────
 export function getBookings(): Booking[] {
-  return getItem<Booking>("px_bookings");
+  return getItem<Booking>("px_bookings", DEFAULT_SEED_BOOKINGS);
 }
 
 export function getBookingsByUser(userId: string): Booking[] {
@@ -326,10 +674,20 @@ export function saveBooking(booking: Omit<Booking, "id" | "createdAt" | "status"
   const newBooking: Booking = {
     ...booking,
     id: generateBookingId(),
-    status: "pending",
+    status: "confirmed",
     createdAt: new Date().toISOString(),
   };
   setItem("px_bookings", [...bookings, newBooking]);
+
+  // Sync with server API asynchronously
+  if (typeof window !== "undefined") {
+    fetch("/api/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newBooking),
+    }).catch((err) => console.error("Server booking sync failed:", err));
+  }
+
   return newBooking;
 }
 
@@ -366,6 +724,23 @@ export function rescheduleBooking(
   );
   setItem("px_bookings", bookings);
 
+  // Sync with server API asynchronously
+  if (typeof window !== "undefined") {
+    fetch("/api/bookings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: bookingId,
+        updates: {
+          date: newDate,
+          time: newTime,
+          status: "rescheduled",
+          rescheduledFrom: { date: oldDate, time: oldTime },
+        },
+      }),
+    }).catch((err) => console.error("Server reschedule sync failed:", err));
+  }
+
   // Send notifications
   addNotification({
     userId: booking.userId,
@@ -385,6 +760,15 @@ export function updateBookingStatus(bookingId: string, status: Booking["status"]
     b.id === bookingId ? { ...b, status } : b
   );
   setItem("px_bookings", bookings);
+
+  // Sync with server API
+  if (typeof window !== "undefined") {
+    fetch("/api/bookings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: bookingId, updates: { status } }),
+    }).catch((err) => console.error("Server booking update failed:", err));
+  }
 }
 
 export function canCancelWithRefund(booking: Booking): { eligible: boolean; hoursRemaining: number } {
@@ -444,13 +828,13 @@ export function confirmBookingByMentor(bookingId: string): { success: boolean } 
   const mentorName = mentor?.name || "Mentor";
   const internName = intern?.name || "Intern";
 
-  // Notification & Email simulation to Intern
+  // Notification to Intern
   addNotification({
     userId: booking.userId,
     message: `🎉 [${booking.id}] Great news! ${mentorName} has confirmed your session on ${booking.date} at ${booking.time}. Please be ready on time!`,
   });
 
-  // Notification & Email simulation to Mentor
+  // Notification to Mentor
   addNotification({
     userId: booking.mentorId,
     message: `✅ [${booking.id}] You successfully confirmed the session with ${internName} on ${booking.date} at ${booking.time}. Be prepared!`,
@@ -540,10 +924,12 @@ export function getUnreadCount(userId: string): number {
 // ─── Platform Stats ───────────────────────────────────────────
 export function getPlatformStats() {
   const users = getUsers();
+  const bookings = getBookings();
   return {
-    totalLearners: users.filter((u) => u.role === "intern").length,
+    totalLearners: users.filter((u) => u.role === "intern" || u.role === "consultation").length,
+    totalInterns: users.filter((u) => u.role === "intern").length,
     totalConsultations: users.filter((u) => u.role === "consultation").length,
-    totalBookings: getBookings().length,
-    completedBookings: getBookings().filter((b) => b.status === "completed").length,
+    totalBookings: bookings.length,
+    completedBookings: bookings.filter((b) => b.status === "completed").length,
   };
 }

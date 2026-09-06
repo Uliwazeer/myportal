@@ -39,8 +39,10 @@ export async function POST(req: Request) {
     );
   }
 
-  // NOTE: Users are saved to localStorage by the client after this API responds OK.
-  // In a production setup, you would save to a database here.
+  // Save user directly to server database
+  const { dbSaveUser } = await import("@/lib/serverDb");
+  const savedUser = dbSaveUser(body);
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, user: savedUser });
 }
+

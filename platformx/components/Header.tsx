@@ -99,9 +99,11 @@ export default function Header() {
         </div>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-5">
           <Link href="/tracks" className="text-sm text-muted hover:text-accent transition-colors">Tracks</Link>
           <Link href="/mentors" className="text-sm text-muted hover:text-accent transition-colors">Mentors</Link>
+          <Link href="/interns" className="text-sm text-muted hover:text-accent transition-colors">Interns</Link>
+          <Link href="/consultations" className="text-sm text-muted hover:text-accent transition-colors">Consultations</Link>
           <Link href="/labs" className="text-sm text-muted hover:text-accent transition-colors">Labs</Link>
           {session && (
             <Link href={dashboardHref} className="relative text-sm text-muted hover:text-accent transition-colors">
@@ -225,6 +227,8 @@ export default function Header() {
         <div className="md:hidden border-t border-border bg-bg px-4 py-4 space-y-3">
           <Link onClick={() => setMenuOpen(false)} href="/tracks" className="block text-sm text-muted hover:text-accent transition-colors py-1">Tracks</Link>
           <Link onClick={() => setMenuOpen(false)} href="/mentors" className="block text-sm text-muted hover:text-accent transition-colors py-1">Mentors</Link>
+          <Link onClick={() => setMenuOpen(false)} href="/interns" className="block text-sm text-muted hover:text-accent transition-colors py-1">Interns</Link>
+          <Link onClick={() => setMenuOpen(false)} href="/consultations" className="block text-sm text-muted hover:text-accent transition-colors py-1">Consultations</Link>
           <Link onClick={() => setMenuOpen(false)} href="/labs" className="block text-sm text-muted hover:text-accent transition-colors py-1">Labs</Link>
           {session ? (
             <Link onClick={() => setMenuOpen(false)} href={dashboardHref} className="block text-sm text-ink hover:text-accent py-1">

@@ -106,6 +106,47 @@ export type Notification = {
   createdAt: string;
 };
 
+export type Activity = {
+  id: string;
+  type: "consultation_booked" | "consultation_completed" | "internship_started" | "review_added";
+  userName: string;
+  mentorName: string;
+  details: string;
+  timestamp: string;
+};
+
+export type VisitorEvent = {
+  id: string;
+  visitorId: string;
+  sessionId?: string;
+  userId?: string;
+  page: string;
+  referrer?: string;
+  device?: string;
+  browser?: string;
+  createdAt: string;
+};
+
+export type PlatformAnalytics = {
+  totalVisits: number;
+  uniqueVisitors: number;
+  todayVisits: number;
+  thisWeekVisits: number;
+  thisMonthVisits: number;
+  registeredUsers: number;
+  totalInterns: number;
+  totalMentors: number;
+  totalConsultations: number;
+  completedConsultations: number;
+  totalReviews: number;
+  averageRating: number;
+  popularPages: { page: string; visits: number }[];
+  popularMentors: { mentorId: string; mentorName: string; bookingsCount: number; rating: number }[];
+  dailyTraffic: { date: string; day: string; visits: number; uniqueVisitors: number }[];
+};
+
+
+
 // ─── Mentors ──────────────────────────────────────────────────────────────────
 
 export type MentoredPerson = {

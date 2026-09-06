@@ -1,20 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAllMentors, getAllTracks, getUsers, getBookings } from "@/lib/store";
+import { getAllMentors, getAllTracks, getUsers, getBookings, syncWithServer } from "@/lib/store";
 import { labs } from "@/lib/data";
 
 export default function StatusPanel() {
   const [stats, setStats] = useState({
     learners: 0,
-    mentors: 4,
+    mentors: 7,
     tracks: 7,
     labs: labs.length,
     sessions: 0,
+    visits: 0,
     rating: 4.9,
   });
 
-  useEffect(() => {
+  function update() {
     const allUsers = getUsers();
     const allMentors = getAllMentors();
     const allTracksList = getAllTracks();
@@ -24,14 +25,37 @@ export default function StatusPanel() {
     const mentorsCount = allMentors.length;
     const completedSessions = allBookings.filter((b) => b.status === "completed").length;
 
-    setStats({
-      learners: learnersCount,
-      mentors: mentorsCount,
-      tracks: allTracksList.length,
-      labs: labs.length,
-      sessions: completedSessions || allBookings.length,
-      rating: 4.9,
-    });
+    fetch("/api/analytics/stats")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.ok && json.stats) {
+          setStats({
+            learners: json.stats.registeredUsers || learnersCount,
+            mentors: json.stats.totalMentors || mentorsCount,
+            tracks: allTracksList.length,
+            labs: labs.length,
+            sessions: json.stats.totalConsultations || allBookings.length,
+            visits: json.stats.totalVisits || 1,
+            rating: json.stats.averageRating || 4.9,
+          });
+        }
+      })
+      .catch(() => {
+        setStats({
+          learners: learnersCount,
+          mentors: mentorsCount,
+          tracks: allTracksList.length,
+          labs: labs.length,
+          sessions: completedSessions || allBookings.length,
+          visits: 1,
+          rating: 4.9,
+        });
+      });
+  }
+
+  useEffect(() => {
+    update();
+    syncWithServer().then(update);
   }, []);
 
   return (
@@ -45,6 +69,12 @@ export default function StatusPanel() {
       </div>
 
       <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="rounded-lg bg-surface2 p-3 border border-border/40">
+          <dt className="font-mono text-[10px] text-muted">total_visits</dt>
+          <dd className="mt-1 font-mono text-2xl text-emerald-400 font-bold">{stats.visits}</dd>
+          <dd className="text-[11px] text-muted">Live Verified Visits</dd>
+        </div>
+
         <div className="rounded-lg bg-surface2 p-3 border border-border/40">
           <dt className="font-mono text-[10px] text-muted">learners_total</dt>
           <dd className="mt-1 font-mono text-2xl text-ink font-bold">{stats.learners}</dd>
@@ -64,15 +94,9 @@ export default function StatusPanel() {
         </div>
 
         <div className="rounded-lg bg-surface2 p-3 border border-border/40">
-          <dt className="font-mono text-[10px] text-muted">practical_labs</dt>
-          <dd className="mt-1 font-mono text-2xl text-ink font-bold">{stats.labs}</dd>
-          <dd className="text-[11px] text-muted">Hands-on Labs</dd>
-        </div>
-
-        <div className="rounded-lg bg-surface2 p-3 border border-border/40">
           <dt className="font-mono text-[10px] text-muted">sessions_held</dt>
           <dd className="mt-1 font-mono text-2xl text-ink font-bold">{stats.sessions}</dd>
-          <dd className="text-[11px] text-muted">Mentorship Sessions</dd>
+          <dd className="text-[11px] text-muted">Consultations &amp; Mentorship</dd>
         </div>
 
         <div className="rounded-lg bg-surface2 p-3 border border-border/40">

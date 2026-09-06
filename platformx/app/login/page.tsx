@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { getUserByEmail, setSession } from '@/lib/store';
+import { getUserByEmail, setSession, syncWithServer } from '@/lib/store';
 import type { UserProfile } from '@/lib/data';
 
 /* ─── helpers ─────────────────────────────────────────────────── */
@@ -43,6 +43,7 @@ export default function LoginPage() {
 
   /* countdown ticker */
   useEffect(() => {
+    syncWithServer();
     if (countdown <= 0) return;
     timerRef.current = setInterval(() => {
       setCountdown(c => {
@@ -63,7 +64,12 @@ export default function LoginPage() {
 
     setLoadingContinue(true);
     try {
-      const user = getUserByEmail(trimmed);
+      let user = getUserByEmail(trimmed);
+      if (!user) {
+        await syncWithServer();
+        user = getUserByEmail(trimmed);
+      }
+
       if (!user) {
         toast.error('No account found. Please register first.');
         return;
