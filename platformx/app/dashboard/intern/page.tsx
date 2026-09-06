@@ -255,25 +255,25 @@ export default function InternDashboard() {
                     <p className="text-xs text-muted">Schedule consultation</p>
                   </div>
                 </Link>
-                <Link href="/roadmap" className="flex items-center gap-3 p-4 bg-surface border border-border rounded-xl hover:bg-surface2 transition-colors">
-                  <span className="text-2xl">🗺️</span>
+                <Link href="/mentors" className="flex items-center gap-3 p-4 bg-surface border border-border rounded-xl hover:bg-surface2 transition-colors">
+                  <span className="text-2xl">👤</span>
                   <div>
-                    <p className="font-medium text-ink text-sm">Career Roadmap</p>
-                    <p className="text-xs text-muted">Goals & Milestones</p>
+                    <p className="font-medium text-ink text-sm">Find a Mentor</p>
+                    <p className="text-xs text-muted">Browse all mentors</p>
                   </div>
                 </Link>
-                <Link href="/assessment" className="flex items-center gap-3 p-4 bg-surface border border-border rounded-xl hover:bg-surface2 transition-colors">
-                  <span className="text-2xl">🎯</span>
+                <Link href="/tracks" className="flex items-center gap-3 p-4 bg-surface border border-border rounded-xl hover:bg-surface2 transition-colors">
+                  <span className="text-2xl">🎓</span>
                   <div>
-                    <p className="font-medium text-ink text-sm">Skill Assessment</p>
-                    <p className="text-xs text-muted">Diagnostic & Matches</p>
+                    <p className="font-medium text-ink text-sm">Explore Tracks</p>
+                    <p className="text-xs text-muted">Curriculum & syllabus</p>
                   </div>
                 </Link>
-                <Link href="/verify/MP-CERT-2026-AW01" className="flex items-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/20 transition-colors">
-                  <span className="text-2xl">🛡️</span>
+                <Link href="/labs" className="flex items-center gap-3 p-4 bg-surface border border-border rounded-xl hover:bg-surface2 transition-colors">
+                  <span className="text-2xl">⚡</span>
                   <div>
-                    <p className="font-medium text-ink text-sm">Verified Certificate</p>
-                    <p className="text-xs text-emerald-400">View credential ledger</p>
+                    <p className="font-medium text-ink text-sm">Hands-on Labs</p>
+                    <p className="text-xs text-muted">Practice scenarios</p>
                   </div>
                 </Link>
               </div>
@@ -290,12 +290,6 @@ export default function InternDashboard() {
                     Review post-session takeaways, complete your homework checklist, and check mentor recommendations.
                   </p>
                 </div>
-                <Link
-                  href="/roadmap"
-                  className="inline-flex items-center gap-2 text-xs font-medium bg-accent text-white px-3 py-2 rounded-lg hover:opacity-90 transition-opacity self-start"
-                >
-                  View Full Career Roadmap →
-                </Link>
               </div>
 
               {sessionNotes.length === 0 ? (

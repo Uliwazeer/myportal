@@ -72,37 +72,42 @@ export default function Header() {
           </span>
         </Link>
 
-        {/* Search bar (desktop) */}
-        <div className="relative hidden md:flex flex-1 max-w-sm">
-          <input
-            ref={searchRef}
-            type="text"
-            placeholder="Search mentors, tracks, skills..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-ink placeholder:text-muted focus:border-accent focus:outline-none"
-          />
-          {query && (
-            <button
-              onClick={() => setQuery("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-ink text-xs"
-            >
-              ✕
-            </button>
-          )}
+        {/* Search bar (desktop) - expanded */}
+        <div className="relative hidden md:flex flex-1 max-w-md lg:max-w-xl xl:max-w-2xl mx-2">
+          <div className="relative w-full">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none text-xs">
+              🔍
+            </span>
+            <input
+              ref={searchRef}
+              type="text"
+              placeholder="Search mentors, engineering tracks, cloud & DevOps skills..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full rounded-xl border border-border bg-surface pl-9 pr-8 py-2 text-sm text-ink placeholder:text-muted focus:border-accent focus:bg-surface2 focus:outline-none transition-all shadow-sm"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink text-xs p-1"
+              >
+                ✕
+              </button>
+            )}
+          </div>
           {results.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 rounded-md border border-border bg-surface shadow-lg z-50 max-h-64 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-1.5 rounded-xl border border-border bg-surface shadow-2xl z-50 max-h-72 overflow-y-auto backdrop-blur-md">
               {results.map((r, i) => (
                 <Link
                   key={i}
                   href={r.href}
                   onClick={() => setQuery("")}
-                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface2 border-b border-border last:border-0"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface2 border-b border-border/60 last:border-0 transition-colors"
                 >
-                  <span className="text-[10px] font-mono text-accent border border-accent/40 rounded px-1.5 py-0.5 shrink-0">
+                  <span className="text-[10px] font-mono font-semibold text-accent border border-accent/40 rounded px-1.5 py-0.5 shrink-0">
                     {r.type}
                   </span>
-                  <span className="text-sm text-ink truncate">{r.label}</span>
+                  <span className="text-sm text-ink truncate font-medium">{r.label}</span>
                 </Link>
               ))}
             </div>
@@ -110,20 +115,17 @@ export default function Header() {
         </div>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-4">
-          <Link href="/tracks" className="text-sm text-muted hover:text-accent transition-colors">Tracks</Link>
-          <Link href="/mentors" className="text-sm text-muted hover:text-accent transition-colors">Mentors</Link>
-          <Link href="/interns" className="text-sm text-muted hover:text-accent transition-colors">Interns</Link>
-          <Link href="/consultations" className="text-sm text-muted hover:text-accent transition-colors">Consultations</Link>
-          <Link href="/assessment" className="text-sm text-muted hover:text-accent transition-colors font-medium">Assessment</Link>
-          <Link href="/roadmap" className="text-sm text-muted hover:text-accent transition-colors font-medium">Roadmap</Link>
-          <Link href="/verify" className="text-sm text-muted hover:text-accent transition-colors">Verify</Link>
-          <Link href="/labs" className="text-sm text-muted hover:text-accent transition-colors">Labs</Link>
+        <nav className="hidden md:flex items-center gap-5 shrink-0">
+          <Link href="/tracks" className="text-sm text-muted hover:text-accent transition-colors font-medium">Tracks</Link>
+          <Link href="/mentors" className="text-sm text-muted hover:text-accent transition-colors font-medium">Mentors</Link>
+          <Link href="/interns" className="text-sm text-muted hover:text-accent transition-colors font-medium">Interns</Link>
+          <Link href="/consultations" className="text-sm text-muted hover:text-accent transition-colors font-medium">Consultations</Link>
+          <Link href="/labs" className="text-sm text-muted hover:text-accent transition-colors font-medium">Labs</Link>
           {session && (
-            <Link href={dashboardHref} className="relative text-sm text-muted hover:text-accent transition-colors">
+            <Link href={dashboardHref} className="relative text-sm text-muted hover:text-accent transition-colors font-medium">
               Dashboard
               {unread > 0 && (
-                <span className="absolute -top-1 -right-3 bg-accent text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+                <span className="absolute -top-1 -right-3 bg-accent text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center font-mono">
                   {unread}
                 </span>
               )}
@@ -239,14 +241,11 @@ export default function Header() {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="md:hidden border-t border-border bg-bg px-4 py-4 space-y-3">
-          <Link onClick={() => setMenuOpen(false)} href="/tracks" className="block text-sm text-muted hover:text-accent transition-colors py-1">Tracks</Link>
-          <Link onClick={() => setMenuOpen(false)} href="/mentors" className="block text-sm text-muted hover:text-accent transition-colors py-1">Mentors</Link>
-          <Link onClick={() => setMenuOpen(false)} href="/interns" className="block text-sm text-muted hover:text-accent transition-colors py-1">Interns</Link>
-          <Link onClick={() => setMenuOpen(false)} href="/consultations" className="block text-sm text-muted hover:text-accent transition-colors py-1">Consultations</Link>
-          <Link onClick={() => setMenuOpen(false)} href="/assessment" className="block text-sm text-muted hover:text-accent transition-colors py-1 font-medium">Assessment</Link>
-          <Link onClick={() => setMenuOpen(false)} href="/roadmap" className="block text-sm text-muted hover:text-accent transition-colors py-1 font-medium">Roadmap</Link>
-          <Link onClick={() => setMenuOpen(false)} href="/verify" className="block text-sm text-muted hover:text-accent transition-colors py-1">Verify</Link>
-          <Link onClick={() => setMenuOpen(false)} href="/labs" className="block text-sm text-muted hover:text-accent transition-colors py-1">Labs</Link>
+          <Link onClick={() => setMenuOpen(false)} href="/tracks" className="block text-sm text-muted hover:text-accent transition-colors py-1 font-medium">Tracks</Link>
+          <Link onClick={() => setMenuOpen(false)} href="/mentors" className="block text-sm text-muted hover:text-accent transition-colors py-1 font-medium">Mentors</Link>
+          <Link onClick={() => setMenuOpen(false)} href="/interns" className="block text-sm text-muted hover:text-accent transition-colors py-1 font-medium">Interns</Link>
+          <Link onClick={() => setMenuOpen(false)} href="/consultations" className="block text-sm text-muted hover:text-accent transition-colors py-1 font-medium">Consultations</Link>
+          <Link onClick={() => setMenuOpen(false)} href="/labs" className="block text-sm text-muted hover:text-accent transition-colors py-1 font-medium">Labs</Link>
           {session ? (
             <Link onClick={() => setMenuOpen(false)} href={dashboardHref} className="block text-sm text-ink hover:text-accent py-1">
               Dashboard {unread > 0 && <span className="ml-1 bg-accent text-white text-xs rounded-full px-1.5">{unread}</span>}
